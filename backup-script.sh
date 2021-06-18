@@ -56,7 +56,7 @@ fi
 
 # Installation of requirements
 function Install-Requirements {
-    apt install -y mariadb-client rclone
+    apt install -y mariadb-client rclone pv
 }
 
 
@@ -87,15 +87,25 @@ function Backup-Folders {
 
     for FOLDER in $FOLDERS; do
         echo ""
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER started."
-        #$DRY /bin/tar -cj $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS -f $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.bz2 -C / ${FOLDER:1} $DRY2
-        $DRY /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz $DRY2
+        FOLDER_SIZE=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER | awk '{print $1}')
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE) started."
+        if [[ $DRY_RUN == "yes" ]]; then
+                $DRY /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P \| pv -s $(du -sb ${FOLDER} \| awk '{print $1}') \| gzip \> $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz $DRY2
+            else
+                /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz
+            fi
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
     done
 
     if [ "$DOCKER" == "yes" ]; then
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of Docker folders started."
-        $DRY /bin/tar -cj $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS -f $BACKUPFOLDER/docker-$DATE.tar.bz2 -C / var/lib/docker $DRY2
+        echo ""
+        FOLDER_SIZE=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER | awk '{print $1}')
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of Docker folders ($FOLDER_SIZE) started."
+        if [[ $DRY_RUN == "yes" ]]; then
+                $DRY /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS /var/lib/docker -P \| pv -s $(du -sb /var/lib/docker \| awk '{print $1}') \| gzip \> $BACKUPFOLDER/docker-$DATE.tar.gz $DRY2
+            else
+                /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS /var/lib/docker -P | pv -s $(du -sb /var/lib/docker | awk '{print $1}') | gzip > $BACKUPFOLDER/docker-$DATE.tar.gz
+            fi
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of Docker folders completed."
     fi
 }
