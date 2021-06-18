@@ -83,6 +83,7 @@ function Backup-Folders {
     fi
 
     for FOLDER in $FOLDERS; do
+        echo ""
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER started."
         $DRY /bin/tar -cj $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS -f $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.bz2 -C / ${FOLDER:1} $DRY2
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
@@ -104,6 +105,7 @@ function Backup-Database {
     $DRY /bin/mkdir -p $BACKUPFOLDER/databases $DRY2
     CONTAINER_DB=$(docker ps | grep -E 'mariadb|mysql|postgres|-db' | awk '{print $NF}')
     for CONTAINER_NAME in $CONTAINER_DB; do
+        echo ""
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup database of $CONTAINER_NAME started."
         DB_VERSION=$(docker ps | grep -w $CONTAINER_NAME | awk '{print $2}')
 
@@ -154,4 +156,6 @@ DELETE_AFTER=$(( $RETENTION_DAYS * 24 * 60 * 60 ))
 
 # Execution
 Backup-Folders
+echo ""
+printf '=%.0s' {1..100}
 Backup-Database
