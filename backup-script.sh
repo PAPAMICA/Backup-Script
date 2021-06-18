@@ -11,7 +11,7 @@ LOKI="yes" # Have you a LOKI server ? Check Loki Config
 DICORD="yes" # Do you want Discord Notifications ? Check Discord Config 
 DOCKER="no" # Have you Docker on this server ?
 FOLDERS="/home /apps" #Folders to backup
-EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data"
+EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /var/log"
 EXCLUDE_EXTENSIONS=".mkv .tmp"
 RETENTION_DAYS=30 # Number of days until object is deleted
 SEGMENT_SIZE="256M"
@@ -90,7 +90,7 @@ function Backup-Folders {
         echo ""
         FOLDER_SIZE_H=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
         FOLDER_SIZE=$(du -s $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
-        FOLDER_TOTAL_SIZE= $(echo $($FOLDER_TOTAL_SIZE + $FOLDER_SIZE) | bc)
+        FOLDER_TOTAL_SIZE= $(echo $FOLDER_TOTAL_SIZE + $FOLDER_SIZE | bc)
 
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE_H) started."
         if [[ $DRY_RUN == "yes" ]]; then
@@ -171,9 +171,9 @@ function Backup-Database {
 
 function Dry-informations {
     printf '=%.0s' {1..100}
-    echo ""
+    echo $FOLDER_TOTAL_SIZE
     FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
-
+    echo ""
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE : $FREE_SPACE_H"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : $FOLDER_TOTAL_SIZE_H"
     echo ""
