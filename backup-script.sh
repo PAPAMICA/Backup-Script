@@ -10,7 +10,7 @@ ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
 LOKI="yes" # Have you a LOKI server ? Check Loki Config
 DICORD="yes" # Do you want Discord Notifications ? Check Discord Config 
 DOCKER="no" # Have you Docker on this server ?
-FOLDERS="/home /var/log" #Folders to backup
+FOLDERS="/home /var/log " #Folders to backup (ex : /var/lib/docker /apps)
 EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data"
 EXCLUDE_EXTENSIONS=".mkv .tmp"
 RETENTION_DAYS=30 # Number of days until object is deleted
@@ -40,6 +40,7 @@ ZABBIXSERVER=""
 LOKI_URL=""
 
 # Discord Config
+DISCORD_WEBHOOK=""
 
 
 if [[ $1 =~ "--dry-run" ]]; then
@@ -58,8 +59,7 @@ FREE_SPACE=$(df $WORKFOLDER | awk 'FNR==2{print $4}')
 
 # Installation of requirements
 function Install-Requirements {
-    apt install -y mariadb-client rclone pv
-}
+    apt install -y mariadb-client rclone pv curl
 
 
 
@@ -92,8 +92,8 @@ function Backup-Folders {
         FOLDER_SIZE_H=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
         FOLDER_SIZE=$(du -s $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
         FOLDER_TOTAL_SIZE=$(echo "$FOLDER_TOTAL_SIZE + $FOLDER_SIZE" | bc)
-        echo $FOLDER_TOTAL_SIZE
 
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Calculate the size of folder $FOLDER, please wait ..."
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE_H) started."
         if [[ $DRY_RUN == "yes" ]]; then
                 $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz" $DRY2
@@ -101,21 +101,8 @@ function Backup-Folders {
                 /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz
             fi
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
+        FOLDER_LIST=$(echo "$FOLDER_LIST, $FOLDER")
     done
-
-    if [ "$DOCKER" == "yes" ]; then
-        echo ""
-        FOLDER_SIZE_H=$(du -hs /var/lib/docker $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
-        FOLDER_SIZE=$(du -s /var/lib/docker $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
-        FOLDER_TOTAL_SIZE=$(echo "$FOLDER_TOTAL_SIZE + $FOLDER_SIZE" | bc)
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of Docker folders ($FOLDER_SIZE_H) started."
-        if [[ $DRY_RUN == "yes" ]]; then
-                $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/docker-$DATE.tar.gz" $DRY2
-            else
-                /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS /var/lib/docker -P | pv -s $(du -sb /var/lib/docker | awk '{print $1}') | gzip > $BACKUPFOLDER/docker-$DATE.tar.gz
-            fi
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of Docker folders completed."
-    fi
 }
 
 
@@ -159,17 +146,14 @@ function Backup-Database {
         if [[ DRY_RUN == "no" ]] && [ "$(du -sb $SQLFILE | awk '{ print $1 }')" -le $SIZE ]; then
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ⚠️   WARNING : Backup file of $CONTAINER_NAME is smaller than 1Mo."
         fi
-
-         if [[ DRY_RUN == "no" ]]; then
-            DB_TOTAL_SIZE_H=$(du -hs $BACKUPFOLDER/databases/ | awk '{print $1}')
-            DB_TOTAL_SIZE=$(du -s $BACKUPFOLDER/databases/ | awk '{print $1}')
-        fi
+            
+        DB_LIST=$(echo "$DB_LIST, $CONTAINER_NAME")
 
 
     done
 }
 
-# Dry-run informations
+# Informations
 
 function Dry-informations {
     printf '=%.0s' {1..100}
@@ -185,19 +169,25 @@ function Dry-informations {
 
 function Run-informations {
     printf '=%.0s' {1..100}
-    echo ""
+    DB_TOTAL_SIZE_H=$(du -hs $BACKUPFOLDER/databases/ | awk '{print $1}')
+    DB_TOTAL_SIZE=$(du -s $BACKUPFOLDER/databases/ | awk '{print $1}')
     FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
-    FREE_SPACE_AFTER_H=$(echo "$FREE_SPACE - $FOLDER_TOTAL_SIZE - $DB_TOTAL_SIZE" | bc | awk '{$1=$1/(1024^2); print $1,"GB";}')
-
+    FREE_SPACE_AFTER_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
+    echo ""
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE BEFORE : $FREE_SPACE_H"
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE (before compression) : ~ $FOLDER_TOTAL_SIZE_H"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP DATABASE SIZE : ~ $DB_TOTAL_SIZE_H"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE AFTER : ~ $FREE_SPACE_AFTER_H"
-
-
     echo ""
     printf '=%.0s' {1..100}
 
+}
+
+# Discord Notifications
+
+function Send-Discord-Notifications {
+    MESSAGE="--username 'BACKUP-NURION' --text 'Backup of $DATE :' --title 'Folders & Databases backuped succefuly' --description 'Folders : $FOLDER_LIST\nDatabase ! $DB_LIST'"
+    sh ;/discord.sh --webhook-url=$DISCORD_WEBHOOK $MESSAGE
 }
 
 
