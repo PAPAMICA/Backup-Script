@@ -74,7 +74,7 @@ function Backup-Folders {
     if [ -n "$EXCLUDE_FOLDERS" ]; then
         ARG_EXCLUDE_FOLDER=""
         for FOLDEREX in $EXCLUDE_FOLDERS; do
-            ARG_EXCLUDE_FOLDER=$(echo $ARG_EXCLUDE_FOLDER "--exclude="${FOLDEREX:1}"" )
+            ARG_EXCLUDE_FOLDER=$(echo $ARG_EXCLUDE_FOLDER "--exclude="$FOLDEREX"" )
         done
     fi
 
