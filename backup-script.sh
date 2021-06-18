@@ -89,7 +89,7 @@ function Backup-Folders {
         echo ""
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER started."
         #$DRY /bin/tar -cj $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS -f $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.bz2 -C / ${FOLDER:1} $DRY2
-        $DRY /bin/tar -cf $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz $DRY2
+        $DRY /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz $DRY2
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
     done
 
