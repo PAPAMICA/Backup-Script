@@ -90,7 +90,7 @@ function Backup-Folders {
         FOLDER_SIZE=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER | awk '{print $1}')
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE) started."
         if [[ $DRY_RUN == "yes" ]]; then
-                $DRY Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz $DRY2
+                $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz" $DRY2
             else
                 /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz
             fi
@@ -102,7 +102,7 @@ function Backup-Folders {
         FOLDER_SIZE=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER | awk '{print $1}')
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of Docker folders ($FOLDER_SIZE) started."
         if [[ $DRY_RUN == "yes" ]]; then
-                $DRY Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/docker-$DATE.tar.gz $DRY2
+                $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/docker-$DATE.tar.gz" $DRY2
             else
                 /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS /var/lib/docker -P | pv -s $(du -sb /var/lib/docker | awk '{print $1}') | gzip > $BACKUPFOLDER/docker-$DATE.tar.gz
             fi
