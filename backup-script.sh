@@ -10,8 +10,8 @@ ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
 LOKI="yes" # Have you a LOKI server ? Check Loki Config
 DICORD="yes" # Do you want Discord Notifications ? Check Discord Config 
 DOCKER="no" # Have you Docker on this server ?
-FOLDERS="/home /apps" #Folders to backup
-EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /var/log"
+FOLDERS="/home /var/log" #Folders to backup
+EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data"
 EXCLUDE_EXTENSIONS=".mkv .tmp"
 RETENTION_DAYS=30 # Number of days until object is deleted
 SEGMENT_SIZE="256M"
@@ -91,6 +91,7 @@ function Backup-Folders {
         FOLDER_SIZE_H=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
         FOLDER_SIZE=$(du -s $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
         FOLDER_TOTAL_SIZE= $(echo $FOLDER_TOTAL_SIZE + $FOLDER_SIZE | bc)
+        echo $FOLDER_TOTAL_SIZE
 
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE_H) started."
         if [[ $DRY_RUN == "yes" ]]; then
