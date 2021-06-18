@@ -1,16 +1,21 @@
 #!/bin/bash
 
+
+
 # Variables
 DATE=$(date +%Y-%m-%d)
-HOUR=$(date +%Y-%m-%d_%H:%M:%S)
-BACKUPFOLDER="/backups/backup-$DATE"
+WORKFOLDER="/apps/backups"
+BACKUPFOLDER="backup-$DATE"
 ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
 LOKI="yes" # Have you a LOKI server ? Check LOKI Config
-DOCKER="yes" # Have you Docker on this server ?
-FOLDERS="/apps" #Folders to backup exept /home and /root
-EXECPTFILE=".mkv .tmp"
+DOCKER="no" # Have you Docker on this server ?
+FOLDERS="/home /root /test" #Folders to backup
+EXCLUDE_FOLDERS="${WORKFOLDER:1} home/debian"
+EXCLUDE_EXTENSIONS=".mkv .tmp"
 RETENTION_DAYS=30 # Number of days until object is deleted
 SEGMENT_SIZE="256M"
+
+
 
 # Swiss Backup Config
 type=swift
@@ -34,6 +39,18 @@ ZABBIXSERVER=""
 LOKI_URL=""
 
 
+if [[ $1 =~ "--dry-run" ]]; then
+    HOUR=$(date +%Y-%m-%d_%H:%M:%S)
+    DRY='echo ['$(date +%Y-%m-%d_%H:%M:%S)']---BackupScript---🚧---DRY RUN : [ '
+    DRY2=' ]'
+    DRY_RUN="yes"
+else
+    DRY=""
+    DRY2=""
+    DRY_RUN="no"
+fi
+
+
 # Installation of requirements
 function Install-Requirements {
     apt install -y mariadb-client rclone
@@ -48,12 +65,33 @@ function Install-Requirements {
 
 # Create archives of folders
 function Backup-Folders {
-    /bin/mkdir $BACKUPFOLDER
-    /bin/tar -cjf $BACKUPFOLDER/home-$DATE.tar.bz2 /home
-    /bin/tar -cjf $BACKUPFOLDER/root-$DATE.tar.bz2 /root
+    echo ""
+    cd $WORKFOLDER
+    $DRY /bin/mkdir $BACKUPFOLDER $DRY2
+    if [ -n "$EXCLUDE_FOLDERS" ]; then
+        ARG_EXCLUDE_FOLDER=""
+        for FOLDEREX in $EXCLUDE_FOLDERS; do
+            ARG_EXCLUDE_FOLDER=$(echo $ARG_EXCLUDE_FOLDER "--exclude="$FOLDEREX"" )
+        done
+    fi
 
-    if [ "$DOCKER"="yes" ]; then
-        /bin/tar -cjf $BACKUPFOLDER/docker-$DATE.tar.bz2 /var/lib/docker 
+    if [ -n "$EXCLUDE_EXTENSIONS" ]; then
+        ARG_EXCLUDE_EXTENSIONS=""
+        for EXTENSION in $EXCLUDE_EXTENSIONS; do
+            ARG_EXCLUDE_EXTENSIONS=$(echo $ARG_EXCLUDE_EXTENSIONS "--exclude="*$EXTENSION"" )
+        done
+    fi
+
+    for FOLDER in $FOLDERS; do
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER started."
+        $DRY /bin/tar -cj $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS -f $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.bz2 -C / ${FOLDER:1} $DRY2
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
+    done
+
+    if [ "$DOCKER" == "yes" ]; then
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of Docker folders started."
+        $DRY /bin/tar -cj $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS -f $BACKUPFOLDER/docker-$DATE.tar.bz2 -C / var/lib/docker $DRY2
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of Docker folders completed."
     fi
 }
 
@@ -61,32 +99,43 @@ function Backup-Folders {
 
 # Create dump of databases Dockers
 function Backup-Database {
-    /bin/mkdir -p $BACKUPFOLDER/databases
+    echo ""
+    cd $WORKFOLDER
+    $DRY /bin/mkdir -p $BACKUPFOLDER/databases $DRY2
     CONTAINER_DB=$(docker ps | grep -E 'mariadb|mysql|postgres|-db' | awk '{print $NF}')
     for CONTAINER_NAME in $CONTAINER_DB; do
-        echo "[$HOUR]   BackupScript   🌀   Backup database of $CONTAINER_NAME started."
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup database of $CONTAINER_NAME started."
         DB_VERSION=$(docker ps | grep -w $CONTAINER_NAME | awk '{print $2}')
 
         if [[ $DB_VERSION == *"mariadb"* ]] || [[ $DB_VERSION == *"mysql"* ]]; then
             DB_USER=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_USER"')
             DB_PASSWORD=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_PASSWORD"')
-            docker exec -e MYSQL_PWD=$DB_PASSWORD $CONTAINER_NAME /usr/bin/mysqldump -u $DB_USER --no-tablespaces --all-databases > "$BACKUPFOLDER"/databases/"$CONTAINER_NAME"-"$DATE".sql
-            echo "[$HOUR]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
+            SQLFILE="$BACKUPFOLDER/databases/$CONTAINER_NAME-$DATE.sql"
+            if [[ $DRY_RUN == "yes" ]]; then
+                $DRY Execute dump of database in $CONTAINER_NAME $DRY2
+            else
+                docker exec -e MYSQL_PWD=$DB_PASSWORD $CONTAINER_NAME /usr/bin/mysqldump -u $DB_USER --no-tablespaces --all-databases > $SQLFILE
+            fi
+            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
         elif [[ $DB_VERSION == *"postgres"* ]]; then
             DB_USER=$(docker exec $CONTAINER_NAME bash -c 'echo "$POSTGRES_USER"')
             DB_PASSWORD=$(docker exec $CONTAINER_NAME bash -c 'echo "$POSTGRES_PASSWORD"')
-            docker exec -t $CONTAINER_NAME pg_dumpall -c -U $DB_USER > "$BACKUPFOLDER"/databases/"$CONTAINER_NAME"-"$DATE".sql
-            echo "[$HOUR]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
+            SQLFILE="$BACKUPFOLDER/databases/$CONTAINER_NAME-$DATE.sql"
+            if [[ $DRY_RUN == "yes" ]]; then
+                $DRY Execute dump of database in $CONTAINER_NAME $DRY2
+            else
+                docker exec -t $CONTAINER_NAME pg_dumpall -c -U $DB_USER > $SQLFILE
+            fi
+            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
         else
-           echo "[$HOUR]   BackupScript   ❌   ERROR : Can't get credentials of $CONTAINER_NAME." 
+           echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't get credentials of $CONTAINER_NAME."
         fi
 
-        SQLFILE="$BACKUPFOLDER"/databases/"$CONTAINER_NAME"-"$DATE".sql
         SIZE=1000
-        if [ "$(du -sb $SQLFILE | awk '{ print $1 }')" -le $SIZE ]; then
-            echo "[$HOUR]   BackupScript   ⚠️   WARNING : Backup file of $CONTAINER_NAME is smaller than 1Mo." 
+        if [[ DRY_RUN == "no" ]] && [ "$(du -sb $SQLFILE | awk '{ print $1 }')" -le $SIZE ]; then
+            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ⚠️   WARNING : Backup file of $CONTAINER_NAME is smaller than 1Mo."
         fi
-        
+
     done
 }
 
@@ -104,11 +153,5 @@ function Backup-Database {
 DELETE_AFTER=$(( $RETENTION_DAYS * 24 * 60 * 60 ))
 
 # Execution
+Backup-Folders
 Backup-Database
-
-
-
-
-
-
-
