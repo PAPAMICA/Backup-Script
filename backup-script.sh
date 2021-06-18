@@ -52,7 +52,9 @@ else
     DRY2=""
     DRY_RUN="no"
 fi
-
+FOLDER_TOTAL_SIZE=0
+FREE_SPACE_H=$(df $WORKFOLDER | awk 'FNR==2{print $4}')
+FREE_SPACE=$(df $WORKFOLDER | awk 'FNR==2{print $4}')
 
 # Installation of requirements
 function Install-Requirements {
@@ -87,8 +89,11 @@ function Backup-Folders {
 
     for FOLDER in $FOLDERS; do
         echo ""
-        FOLDER_SIZE=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER | awk '{print $1}')
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE) started."
+        FOLDER_SIZE_H=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
+        FOLDER_SIZE=$(du -s $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
+        FOLDER_TOTAL_SIZE= $(echo $($FOLDER_TOTAL_SIZE + $FOLDER_SIZE) | bc)
+
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE_H) started."
         if [[ $DRY_RUN == "yes" ]]; then
                 $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz" $DRY2
             else
@@ -99,8 +104,10 @@ function Backup-Folders {
 
     if [ "$DOCKER" == "yes" ]; then
         echo ""
-        FOLDER_SIZE=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER | awk '{print $1}')
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of Docker folders ($FOLDER_SIZE) started."
+        FOLDER_SIZE_H=$(du -hs /var/lib/docker $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
+        FOLDER_SIZE=$(du -s /var/lib/docker $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
+        FOLDER_TOTAL_SIZE= $(echo $($FOLDER_TOTAL_SIZE + $FOLDER_SIZE) | bc)
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of Docker folders ($FOLDER_SIZE_H) started."
         if [[ $DRY_RUN == "yes" ]]; then
                 $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/docker-$DATE.tar.gz" $DRY2
             else
@@ -152,8 +159,46 @@ function Backup-Database {
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ⚠️   WARNING : Backup file of $CONTAINER_NAME is smaller than 1Mo."
         fi
 
+         if [[ DRY_RUN == "no" ]]; then
+            DB_TOTAL_SIZE_H=$(du -hs $BACKUPFOLDER/databases/ | awk '{print $1}')
+            DB_TOTAL_SIZE=$(du -s $BACKUPFOLDER/databases/ | awk '{print $1}')
+
+
     done
 }
+
+# Dry-run informations
+
+function Dry-informations {
+    printf '=%.0s' {1..100}
+    echo ""
+    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
+
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE : $FREE_SPACE_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : $FOLDER_TOTAL_SIZE_H"
+    echo ""
+    printf '=%.0s' {1..100}
+
+}
+
+function Run-informations {
+    printf '=%.0s' {1..100}
+    echo ""
+    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
+    FREE_SPACE_AFTER_H=$(echo $($FREE_SPACE - $FOLDER_TOTAL_SIZE - $DB_TOTAL_SIZE) | bc | awk '{$1=$1/(1024^2); print $1,"GB";}')
+
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE BEFORE : $FREE_SPACE_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : $FOLDER_TOTAL_SIZE_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP DATABASE SIZE : $DB_TOTAL_SIZE_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE AFTER : $FREE_SPACE_AFTER_H"
+
+
+    echo ""
+    printf '=%.0s' {1..100}
+
+}
+
+
 
 
 # Send to Swiss Backup
@@ -174,3 +219,7 @@ echo ""
 printf '=%.0s' {1..100}
 echo ""
 Backup-Database
+if [[ $DRY_RUN == "yes" ]]; then
+    Dry-informations
+else
+    Run-informations
