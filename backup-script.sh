@@ -9,8 +9,8 @@ BACKUPFOLDER="backup-$DATE"
 ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
 LOKI="yes" # Have you a LOKI server ? Check LOKI Config
 DOCKER="no" # Have you Docker on this server ?
-FOLDERS="/home /root /test" #Folders to backup
-EXCLUDE_FOLDERS="${WORKFOLDER:1} home/debian"
+FOLDERS="/home /apps" #Folders to backup
+EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data"
 EXCLUDE_EXTENSIONS=".mkv .tmp"
 RETENTION_DAYS=30 # Number of days until object is deleted
 SEGMENT_SIZE="256M"
@@ -71,7 +71,7 @@ function Backup-Folders {
     if [ -n "$EXCLUDE_FOLDERS" ]; then
         ARG_EXCLUDE_FOLDER=""
         for FOLDEREX in $EXCLUDE_FOLDERS; do
-            ARG_EXCLUDE_FOLDER=$(echo $ARG_EXCLUDE_FOLDER "--exclude="$FOLDEREX"" )
+            ARG_EXCLUDE_FOLDER=$(echo $ARG_EXCLUDE_FOLDER "--exclude="${FOLDEREX:1}"" )
         done
     fi
 
