@@ -177,7 +177,7 @@ function Dry-informations {
     FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
     echo ""
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE : $FREE_SPACE_H"
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : $FOLDER_TOTAL_SIZE_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
     echo ""
     printf '=%.0s' {1..100}
 
@@ -187,12 +187,12 @@ function Run-informations {
     printf '=%.0s' {1..100}
     echo ""
     FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
-    FREE_SPACE_AFTER_H=$(echo $($FREE_SPACE - $FOLDER_TOTAL_SIZE - $DB_TOTAL_SIZE) | bc | awk '{$1=$1/(1024^2); print $1,"GB";}')
+    FREE_SPACE_AFTER_H=$(echo "$FREE_SPACE - $FOLDER_TOTAL_SIZE - $DB_TOTAL_SIZE" | bc | awk '{$1=$1/(1024^2); print $1,"GB";}')
 
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE BEFORE : $FREE_SPACE_H"
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : $FOLDER_TOTAL_SIZE_H"
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP DATABASE SIZE : $DB_TOTAL_SIZE_H"
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE AFTER : $FREE_SPACE_AFTER_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP DATABASE SIZE : ~ $DB_TOTAL_SIZE_H"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE AFTER : ~ $FREE_SPACE_AFTER_H"
 
 
     echo ""
