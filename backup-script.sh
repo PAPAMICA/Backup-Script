@@ -7,7 +7,8 @@ DATE=$(date +%Y-%m-%d)
 WORKFOLDER="/apps/backups"
 BACKUPFOLDER="backup-$DATE"
 ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
-LOKI="yes" # Have you a LOKI server ? Check LOKI Config
+LOKI="yes" # Have you a LOKI server ? Check Loki Config
+DICORD="yes" # Do you want Discord Notifications ? Check Discord Config 
 DOCKER="no" # Have you Docker on this server ?
 FOLDERS="/home /apps" #Folders to backup
 EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data"
@@ -35,8 +36,10 @@ HOSTNAME=""
 ZABBIXSERVER=""
 
 
-# LOKI Config
+# Loki Config
 LOKI_URL=""
+
+# Discord Config
 
 
 if [[ $1 =~ "--dry-run" ]]; then
@@ -85,7 +88,8 @@ function Backup-Folders {
     for FOLDER in $FOLDERS; do
         echo ""
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER started."
-        $DRY /bin/tar -cj $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS -f $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.bz2 -C / ${FOLDER:1} $DRY2
+        #$DRY /bin/tar -cj $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS -f $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.bz2 -C / ${FOLDER:1} $DRY2
+        $DRY /bin/tar -cf $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/${FOLDER:1}-$DATE.tar.gz $DRY2
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
     done
 
