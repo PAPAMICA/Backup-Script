@@ -52,6 +52,7 @@ else
     DRY2=""
     DRY_RUN="no"
 fi
+FOLDER_TOTAL_SIZE=0
 FREE_SPACE_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
 FREE_SPACE=$(df $WORKFOLDER | awk 'FNR==2{print $4}')
 
@@ -90,7 +91,7 @@ function Backup-Folders {
         echo ""
         FOLDER_SIZE_H=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
         FOLDER_SIZE=$(du -s $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
-        FOLDER_TOTAL_SIZE= $(echo $FOLDER_TOTAL_SIZE + $FOLDER_SIZE | bc)
+        FOLDER_TOTAL_SIZE=$(echo "$FOLDER_TOTAL_SIZE + $FOLDER_SIZE" | bc)
         echo $FOLDER_TOTAL_SIZE
 
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE_H) started."
@@ -106,7 +107,7 @@ function Backup-Folders {
         echo ""
         FOLDER_SIZE_H=$(du -hs /var/lib/docker $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
         FOLDER_SIZE=$(du -s /var/lib/docker $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
-        FOLDER_TOTAL_SIZE= $(echo $FOLDER_TOTAL_SIZE + $FOLDER_SIZE | bc)
+        FOLDER_TOTAL_SIZE=$(echo "$FOLDER_TOTAL_SIZE + $FOLDER_SIZE" | bc)
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of Docker folders ($FOLDER_SIZE_H) started."
         if [[ $DRY_RUN == "yes" ]]; then
                 $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/docker-$DATE.tar.gz" $DRY2
