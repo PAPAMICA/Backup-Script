@@ -158,4 +158,5 @@ DELETE_AFTER=$(( $RETENTION_DAYS * 24 * 60 * 60 ))
 Backup-Folders
 echo ""
 printf '=%.0s' {1..100}
+echo ""
 Backup-Database
