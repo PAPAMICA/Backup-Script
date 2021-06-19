@@ -257,7 +257,7 @@ function Run-informations {
 # Send to Swiss Backup
 function Send-to-Swiss-Backup {
     rclone mkdir Swiss-Backup:$BACKUPFOLDER
-    rclone copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$BACKUPFOLDER Swiss-Backup:$BACKUPFOLDER
+    rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$BACKUPFOLDER Swiss-Backup:$BACKUPFOLDER
     BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 Swiss-Backup")
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to Swiss-Backup"
     echo ""
@@ -267,7 +267,7 @@ function Send-to-Swiss-Backup {
 
 # Send to kDrive
 function Send-to-kDrive {
-    rclone copy $WORKFOLDER/$BACKUPFOLDER kDrive:$BACKUPFOLDER
+    rclone -P copy $WORKFOLDER/$BACKUPFOLDER kDrive:$BACKUPFOLDER
     BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 kDrive")
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to kDrive"
     echo ""
