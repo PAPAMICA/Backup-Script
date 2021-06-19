@@ -247,7 +247,6 @@ function Run-informations {
     echo "$(<folders.txt)" 
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP DATABASE SIZE : ~ $DB_TOTAL_SIZE_H"
     echo "$(<databases.txt)" 
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE AFTER : ~ $FREE_SPACE_AFTER_H"
     rm folders.txt databases.txt
     echo ""
     printf '=%.0s' {1..100}
