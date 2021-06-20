@@ -469,9 +469,9 @@ function Send-To-Zabbix {
             zabbix_sender -vv -z $ZABBIX_SRV -i $ZABBIX_DATA
             status=$?
             if test $status -eq 0; then
-                echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the send data to Zabbix."
-            else
                 echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
+            else
+                echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the send data to Zabbix."
             fi
         fi
     fi
