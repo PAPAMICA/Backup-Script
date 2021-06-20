@@ -223,11 +223,12 @@ function Backup-Database {
         if [[ $DB_VERSION == *"mariadb"* ]] || [[ $DB_VERSION == *"mysql"* ]]; then
             DB_USER=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_USER"')
             DB_PASSWORD=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_PASSWORD"')
+            DB_DATABASE=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_DATABASE"')
             SQLFILE="$BACKUPFOLDER/databases/$CONTAINER_NAME-mysql-$DATE.sql"
             if [[ $DRY_RUN == "yes" ]]; then
                 $DRY Execute dump of database in $CONTAINER_NAME $DRY2
             else
-                docker exec -e MYSQL_PWD=$DB_PASSWORD $CONTAINER_NAME /usr/bin/mysqldump -u $DB_USER --no-tablespaces --all-databases > $SQLFILE
+                docker exec -e MYSQL_PWD=$DB_PASSWORD $CONTAINER_NAME /usr/bin/mysqldump -u $DB_USER --no-tablespaces $DB_DATABASE > $SQLFILE
                 status=$?
                 if test $status -eq 0; then
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
@@ -285,6 +286,7 @@ function Backup-Database {
                     ((DB_BACKUP_ERRORS++))
                 fi
                 DB_SIZE_AFTER_H=$(du -hs $SQLFILE | awk '{print $1}')
+                DB_SIZE_AFTER=$(du -s $SQLFILE | awk '{print $1}')
                 echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-postgres-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
                 if [[ $ZABBIX == "yes" ]]; then
                     echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA    
@@ -295,7 +297,7 @@ function Backup-Database {
             ((DB_BACKUP_ERRORS++))
         fi
 
-        SIZE=1000
+        SIZE=5000
         if [[ DRY_RUN == "no" ]] && [ "$(du -sb $SQLFILE | awk '{ print $1 }')" -le $SIZE ]; then
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ⚠️   WARNING : Backup file of $CONTAINER_NAME is smaller than 1Mo."
             ((DB_BACKUP_ERRORS++))
@@ -397,7 +399,7 @@ function Send-To-Zabbix {
         echo "\"$ZABBIX_HOST"\" send.kdrive.status $KDRIVE_STATUS >> $ZABBIX_DATA
         zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
         zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
-        sleep 5
+        sleep 30
         zabbix_sender -z $ZABBIX_SRV -i $ZABBIX_DATA
         status=$?
         if test $status -eq 0; then
