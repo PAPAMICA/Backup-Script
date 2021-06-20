@@ -12,8 +12,8 @@ SWISS_BACKUP="yes" # Do you want send backups to Swiss-Backup ?
 ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
 DISCORD="yes" # Do you want Discord Notifications ? Check Discord Config 
 DOCKER="yes" # Have you Docker on this server ?
-FOLDERS="/home /apps /var/lib/docker " #Folders to backup (ex : /var/lib/docker /apps)
-EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data /var/lib/docker/image /var/lib/docker/overlay2"
+FOLDERS="/home /root /apps" #Folders to backup (ex : /var/lib/docker /apps)
+EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data /apps/docker/image /apps/docker/overlay2"
 EXCLUDE_EXTENSIONS=".mkv .tmp"
 RETENTION_DAYS=30 # Number of days until object is deleted
 SEGMENT_SIZE="256M"
@@ -373,6 +373,7 @@ function Send-Discord-Notifications {
 
 # Execution
 START_TIME="date +%s"
+Install-Requirements
 if [[ $KDRIVE == "yes" ]]; then
     Create-Rclone-Config-kDrive
 fi
