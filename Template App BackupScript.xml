@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>5.2</version>
+    <date>2021-06-20T16:51:31Z</date>
+    <groups>
+        <group>
+            <name>Templates/Applications</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Template App BackupScript</template>
+            <name>Template App BackupScript</name>
+            <description>Created by Mickael ASSELINE (PAPAMICA) 
+https://mickaelasseline.com
+https://github.com/PAPAMICA/Backup-Script</description>
+            <groups>
+                <group>
+                    <name>Templates/Applications</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>BackupScript</name>
+                </application>
+                <application>
+                    <name>BackupScript - Databases</name>
+                </application>
+                <application>
+                    <name>BackupScript - Folders</name>
+                </application>
+            </applications>
+            <items>
+                <item>
+                    <name>Backup folders total size</name>
+                    <type>TRAP</type>
+                    <key>backup.size</key>
+                    <delay>0</delay>
+                    <units>o</units>
+                    <description>Size of backup folders before compression in bytes</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>MULTIPLIER</type>
+                            <parameters>
+                                <parameter>1000</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                </item>
+                <item>
+                    <name>Backup total size</name>
+                    <type>TRAP</type>
+                    <key>backup.size.compressed</key>
+                    <delay>0</delay>
+                    <units>o</units>
+                    <description>Size of backup after compression in bytes</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>MULTIPLIER</type>
+                            <parameters>
+                                <parameter>1000</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                </item>
+                <item>
+                    <name>Backup time</name>
+                    <type>TRAP</type>
+                    <key>backup.time</key>
+                    <delay>0</delay>
+                    <units>s</units>
+                    <description>Time in secondes for backup</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Latest backup date</name>
+                    <type>TRAP</type>
+                    <key>date.last.backup</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Databases backup count</name>
+                    <type>TRAP</type>
+                    <key>db.backup.count</key>
+                    <delay>0</delay>
+                    <description>Number of databases backuped</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Databases backup errors</name>
+                    <type>TRAP</type>
+                    <key>db.backup.errors</key>
+                    <delay>0</delay>
+                    <description>Number of error for databases backup</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Databases backup list</name>
+                    <type>TRAP</type>
+                    <key>db.backup.list</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <description>List of databases backuped</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Folders backup count</name>
+                    <type>TRAP</type>
+                    <key>folder.backup.count</key>
+                    <delay>0</delay>
+                    <description>Number of folders backuped</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Folders backup errors</name>
+                    <type>TRAP</type>
+                    <key>folder.backup.errors</key>
+                    <delay>0</delay>
+                    <description>Number of error for folders backup</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Folders backup list</name>
+                    <type>TRAP</type>
+                    <key>folder.backup.list</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <description>List of folders backuped</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Status of upload to kDrive</name>
+                    <type>TRAP</type>
+                    <key>send.kdrive.status</key>
+                    <delay>0</delay>
+                    <description>0 = Success
+1 = Error</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Status of upload to Swiss-Backup</name>
+                    <type>TRAP</type>
+                    <key>send.swissbackup.status</key>
+                    <delay>0</delay>
+                    <description>0 = Success
+1 = Error</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+            </items>
+            <discovery_rules>
+                <discovery_rule>
+                    <name>Backup database size</name>
+                    <type>TRAP</type>
+                    <key>backup.db.size.discovery</key>
+                    <delay>0</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#DB} size</name>
+                            <type>TRAP</type>
+                            <key>backup.db.size[{#DB}]</key>
+                            <delay>0</delay>
+                            <units>o</units>
+                            <applications>
+                                <application>
+                                    <name>BackupScript - Databases</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>MULTIPLIER</type>
+                                    <parameters>
+                                        <parameter>1000</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                        </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Backup folders size</name>
+                    <type>TRAP</type>
+                    <key>backup.folder.size.discovery</key>
+                    <delay>0</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#FOLDER} size</name>
+                            <type>TRAP</type>
+                            <key>backup.folder.size[{#FOLDER}]</key>
+                            <delay>0</delay>
+                            <units>o</units>
+                            <applications>
+                                <application>
+                                    <name>BackupScript - Folders</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>MULTIPLIER</type>
+                                    <parameters>
+                                        <parameter>1000</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                        </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+            </discovery_rules>
+        </template>
+    </templates>
+</zabbix_export>
