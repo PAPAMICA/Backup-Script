@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.2</version>
-    <date>2021-06-20T16:51:31Z</date>
+    <date>2021-06-20T22:31:01Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -43,14 +43,6 @@ https://github.com/PAPAMICA/Backup-Script</description>
                             <name>BackupScript</name>
                         </application>
                     </applications>
-                    <preprocessing>
-                        <step>
-                            <type>MULTIPLIER</type>
-                            <parameters>
-                                <parameter>1000</parameter>
-                            </parameters>
-                        </step>
-                    </preprocessing>
                 </item>
                 <item>
                     <name>Backup total size</name>
@@ -64,14 +56,6 @@ https://github.com/PAPAMICA/Backup-Script</description>
                             <name>BackupScript</name>
                         </application>
                     </applications>
-                    <preprocessing>
-                        <step>
-                            <type>MULTIPLIER</type>
-                            <parameters>
-                                <parameter>1000</parameter>
-                            </parameters>
-                        </step>
-                    </preprocessing>
                 </item>
                 <item>
                     <name>Backup time</name>
@@ -220,14 +204,62 @@ https://github.com/PAPAMICA/Backup-Script</description>
                                     <name>BackupScript - Databases</name>
                                 </application>
                             </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>MULTIPLIER</type>
-                                    <parameters>
-                                        <parameter>1000</parameter>
-                                    </parameters>
-                                </step>
-                            </preprocessing>
+                        </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Backup destinations</name>
+                    <type>TRAP</type>
+                    <key>backup.destinations.discovery</key>
+                    <delay>0</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#DESTINATION} free</name>
+                            <type>TRAP</type>
+                            <key>backup.free[{#DESTINATION}]</key>
+                            <delay>0</delay>
+                            <units>o</units>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>BackupScript - {#DESTINATION}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#DESTINATION} total</name>
+                            <type>TRAP</type>
+                            <key>backup.total[{#DESTINATION}]</key>
+                            <delay>0</delay>
+                            <units>o</units>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>BackupScript - {#DESTINATION}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#DESTINATION} used pourcent</name>
+                            <type>TRAP</type>
+                            <key>backup.used.pourcent[{#DESTINATION}]</key>
+                            <delay>0</delay>
+                            <units>%</units>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>BackupScript - {#DESTINATION}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#DESTINATION} used</name>
+                            <type>TRAP</type>
+                            <key>backup.used[{#DESTINATION}]</key>
+                            <delay>0</delay>
+                            <units>o</units>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>BackupScript - {#DESTINATION}</name>
+                                </application_prototype>
+                            </application_prototypes>
                         </item_prototype>
                     </item_prototypes>
                 </discovery_rule>
@@ -248,14 +280,6 @@ https://github.com/PAPAMICA/Backup-Script</description>
                                     <name>BackupScript - Folders</name>
                                 </application>
                             </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>MULTIPLIER</type>
-                                    <parameters>
-                                        <parameter>1000</parameter>
-                                    </parameters>
-                                </step>
-                            </preprocessing>
                         </item_prototype>
                     </item_prototypes>
                 </discovery_rule>
