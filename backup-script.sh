@@ -162,10 +162,16 @@ function Backup-Folders {
                 $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz" $DRY2
             else
                 /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz
+                status=$?
+                if test $status -eq 0; then
+                    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
+                else
+                    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup of $FOLDER."
+                fi
                 FOLDER_SIZE_AFTER_H=$(du -hs $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
-                echo "                                               🔹 [ $FOLDER_NAME ] - $FOLDER : $FOLDER_SIZE_H ($FOLDER_SIZE_AFTER_H)" >> folders.txt
+                echo "                                            🔹 [ $FOLDER_NAME ] - $FOLDER : $FOLDER_SIZE_H ($FOLDER_SIZE_AFTER_H)" >> folders.txt
             fi
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
+        
         FOLDER_LIST=$(echo "$FOLDER_LIST $FOLDER")
     done
     echo ""
@@ -194,9 +200,15 @@ function Backup-Database {
                 $DRY Execute dump of database in $CONTAINER_NAME $DRY2
             else
                 docker exec -e MYSQL_PWD=$DB_PASSWORD $CONTAINER_NAME /usr/bin/mysqldump -u $DB_USER --no-tablespaces --all-databases > $SQLFILE
-                echo "                                               🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-mysql-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
+                status=$?
+                if test $status -eq 0; then
+                    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
+                else
+                    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
+                fi
+                echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-mysql-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
             fi
-            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
+            
         elif [[ $DB_VERSION == *"postgres"* ]]; then
             DB_USER=$(docker exec $CONTAINER_NAME bash -c 'echo "$POSTGRES_USER"')
             DB_PASSWORD=$(docker exec $CONTAINER_NAME bash -c 'echo "$POSTGRES_PASSWORD"')
@@ -205,10 +217,15 @@ function Backup-Database {
                 $DRY Execute dump of database in $CONTAINER_NAME $DRY2
             else
                 docker exec -t $CONTAINER_NAME pg_dumpall -c -U $DB_USER > $SQLFILE
+                status=$?
+                if test $status -eq 0; then
+                    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
+                else
+                    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
+                fi
                 DB_SIZE_AFTER_H=$(du -hs $SQLFILE | awk '{print $1}')
-                echo "                                               🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-postgres-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
+                echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-postgres-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
             fi
-            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
         else
            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't get credentials of $CONTAINER_NAME."
         fi
@@ -257,8 +274,15 @@ function Run-informations {
 function Send-to-Swiss-Backup {
     rclone mkdir Swiss-Backup:$BACKUPFOLDER
     rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$BACKUPFOLDER Swiss-Backup:$BACKUPFOLDER
-    BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 Swiss-Backup")
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to Swiss-Backup"
+    status=$?
+    if test $status -eq 0; then
+        BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 Swiss-Backup")
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to Swiss-Backup."
+    else
+        BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 Swiss-Backup")
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to Swiss-Backup."
+    fi
+
     echo ""
     printf '=%.0s' {1..100}
     echo ""
@@ -267,8 +291,14 @@ function Send-to-Swiss-Backup {
 # Send to kDrive
 function Send-to-kDrive {
     rclone -P copy $WORKFOLDER/$BACKUPFOLDER kDrive:$BACKUPFOLDER
-    BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 kDrive")
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to kDrive"
+    status=$?
+    if test $status -eq 0; then
+        BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 kDrive")
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to kDrive."
+    else
+        BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 kDrive")
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to kDrive."
+    fi
     echo ""
     printf '=%.0s' {1..100}
     echo ""
