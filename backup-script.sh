@@ -159,15 +159,15 @@ function Backup-Folders {
         echo ""
 
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Calculate the size of folder $FOLDER, please wait ..."
-        FOLDER_SIZE_H=$(du -hs $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
-        FOLDER_SIZE=$(du -s $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
+        FOLDER_SIZE_H=$(du -bhs $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
+        FOLDER_SIZE=$(du -bs $FOLDER $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS | awk '{print $1}')
         FOLDER_TOTAL_SIZE=$(echo "$FOLDER_TOTAL_SIZE + $FOLDER_SIZE" | bc)
         FOLDER_NAME=$(basename $FOLDER)
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE_H) started."
         if [[ $DRY_RUN == "yes" ]]; then
                 $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz" $DRY2
             else
-                /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $(du -sb ${FOLDER} | awk '{print $1}') | gzip > $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz
+                /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $FOLDER_SIZE | gzip > $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz
                 status=$?
                 if test $status -eq 0; then
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
@@ -188,8 +188,8 @@ function Backup-Folders {
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup of $FOLDER."
                     ((FOLDERS_BACKUP_ERRORS++))
                 fi
-                FOLDER_SIZE_AFTER_H=$(du -hs $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
-                FOLDER_SIZE_AFTER=$(du -s $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
+                FOLDER_SIZE_AFTER_H=$(du -bhs $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
+                FOLDER_SIZE_AFTER=$(du -bs $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
                 echo "                                            🔹 [ $FOLDER_NAME ] - $FOLDER : $FOLDER_SIZE_H ($FOLDER_SIZE_AFTER_H)" >> folders.txt
                 if [[ $ZABBIX == "yes" ]]; then
                     echo "\"$ZABBIX_HOST"\" backup.folder.size[$FOLDER_NAME] $FOLDER_SIZE_AFTER >> $ZABBIX_DATA    
@@ -249,8 +249,8 @@ function Backup-Database {
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
                     ((DB_BACKUP_ERRORS++))
                 fi
-                DB_SIZE_AFTER_H=$(du -hs $SQLFILE | awk '{print $1}')
-                DB_SIZE_AFTER=$(du -s $SQLFILE | awk '{print $1}')
+                DB_SIZE_AFTER_H=$(du -bhs $SQLFILE | awk '{print $1}')
+                DB_SIZE_AFTER=$(du -bs $SQLFILE | awk '{print $1}')
                 echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-mysql-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
                 if [[ $ZABBIX == "yes" ]]; then
                     echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA    
@@ -285,8 +285,8 @@ function Backup-Database {
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
                     ((DB_BACKUP_ERRORS++))
                 fi
-                DB_SIZE_AFTER_H=$(du -hs $SQLFILE | awk '{print $1}')
-                DB_SIZE_AFTER=$(du -s $SQLFILE | awk '{print $1}')
+                DB_SIZE_AFTER_H=$(du -bhs $SQLFILE | awk '{print $1}')
+                DB_SIZE_AFTER=$(du -bs $SQLFILE | awk '{print $1}')
                 echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-postgres-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
                 if [[ $ZABBIX == "yes" ]]; then
                     echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA    
@@ -298,7 +298,7 @@ function Backup-Database {
         fi
 
         SIZE=5000
-        if [[ DRY_RUN == "no" ]] && [ "$(du -sb $SQLFILE | awk '{ print $1 }')" -le $SIZE ]; then
+        if [[ DRY_RUN == "no" ]] && [ "$(du -bsb $SQLFILE | awk '{ print $1 }')" -le $SIZE ]; then
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ⚠️   WARNING : Backup file of $CONTAINER_NAME is smaller than 1Mo."
             ((DB_BACKUP_ERRORS++))
         fi
@@ -323,11 +323,11 @@ function Dry-informations {
 }
 
 function Run-informations {
-    DB_TOTAL_SIZE_H=$(du -hs $BACKUPFOLDER/databases/ | awk '{print $1}')
-    DB_TOTAL_SIZE=$(du -s $BACKUPFOLDER/databases/ | awk '{print $1}')
+    DB_TOTAL_SIZE_H=$(du -bhs $BACKUPFOLDER/databases/ | awk '{print $1}')
+    DB_TOTAL_SIZE=$(du -bs $BACKUPFOLDER/databases/ | awk '{print $1}')
     FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
-    FOLDER_TOTAL_SIZE_COMPRESSED=$(du -s $BACKUPFOLDER | awk '{print $1}')
-    FOLDER_TOTAL_SIZE_COMPRESSED_H=$(du -hs $BACKUPFOLDER | awk '{print $1}')
+    FOLDER_TOTAL_SIZE_COMPRESSED=$(du -bs $BACKUPFOLDER | awk '{print $1}')
+    FOLDER_TOTAL_SIZE_COMPRESSED_H=$(du -bhs $BACKUPFOLDER | awk '{print $1}')
     FREE_SPACE_AFTER_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE BEFORE : $FREE_SPACE_H"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
@@ -399,7 +399,7 @@ function Send-To-Zabbix {
         echo "\"$ZABBIX_HOST"\" send.kdrive.status $KDRIVE_STATUS >> $ZABBIX_DATA
         zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
         zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
-        sleep 30
+        sleep 120
         zabbix_sender -z $ZABBIX_SRV -i $ZABBIX_DATA
         status=$?
         if test $status -eq 0; then
