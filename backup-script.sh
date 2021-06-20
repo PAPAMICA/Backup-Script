@@ -44,7 +44,7 @@ sb_auth_version=""
 ZABBIX_SENDER="/usr/bin/zabbix_sender"
 ZABBIX_HOST="NURION" # Name of your host
 ZABBIX_SRV="" # IP of your Zabbix server or proxy
-ZABBIX_DATA="/var/log/backupscript/zabbix/zabbix_$TIMESTAMP.log"
+ZABBIX_DATA="/var/log/backupscript_zabbix_$TIMESTAMP.log"
 
 
 # Discord Config
@@ -137,6 +137,7 @@ function Create-Rclone-Config-Swiss-Backup {
 function Backup-Folders {
     FOLDERS_BACKUP_ERRORS=0
     FOLDERS_COUNT=0
+    FOLDER_COUNT_VAR=$(echo $FOLDERS | wc -w)
     echo ""
     cd $WORKFOLDER
     $DRY /bin/mkdir $BACKUPFOLDER $DRY2
@@ -171,12 +172,29 @@ function Backup-Folders {
                 if test $status -eq 0; then
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
                     ((FOLDERS_COUNT++))
+                    if [[ $ZABBIX == "yes" ]]; then
+                        if test $FOLDERS_COUNT -eq 1; then
+                            ZABBIX_FOLDER_INV=$(echo "{ \"data\": [")
+                        fi
+                        ZABBIX_FOLDER_INV=$(echo "$ZABBIX_FOLDER_INV{ \"{#FOLDER}\":\"$FOLDER_NAME\" }")
+                        if test $FOLDERS_COUNT -ne $FOLDER_COUNT_VAR; then
+                            ZABBIX_FOLDER_INV=$(echo "$ZABBIX_FOLDER_INV,")
+                        fi
+                        if test $FOLDERS_COUNT -eq $FOLDER_COUNT_VAR; then
+                            ZABBIX_FOLDER_INV=$(echo "$ZABBIX_FOLDER_INV]}")
+                        fi
+                    fi
                 else
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup of $FOLDER."
                     ((FOLDERS_BACKUP_ERRORS++))
                 fi
                 FOLDER_SIZE_AFTER_H=$(du -hs $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
+                FOLDER_SIZE_AFTER=$(du -s $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
                 echo "                                            🔹 [ $FOLDER_NAME ] - $FOLDER : $FOLDER_SIZE_H ($FOLDER_SIZE_AFTER_H)" >> folders.txt
+                if [[ $ZABBIX == "yes" ]]; then
+                    echo "\"$ZABBIX_HOST"\" backup.folder.size[$FOLDER_NAME] $FOLDER_SIZE_AFTER >> $ZABBIX_DATA    
+                fi
+                
             fi
         
         FOLDER_LIST=$(echo "$FOLDER_LIST $FOLDER")
@@ -196,6 +214,7 @@ function Backup-Database {
     cd $WORKFOLDER
     $DRY /bin/mkdir -p $BACKUPFOLDER/databases $DRY2
     CONTAINER_DB=$(docker ps | grep -E 'mariadb|mysql|postgres|-db' | awk '{print $NF}')
+    DB_COUNT_VAR=$(echo $CONTAINER_DB | wc -w)
     for CONTAINER_NAME in $CONTAINER_DB; do
         echo ""
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup database of $CONTAINER_NAME started."
@@ -213,11 +232,28 @@ function Backup-Database {
                 if test $status -eq 0; then
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
                     ((DB_COUNT++))
+                    if [[ $ZABBIX == "yes" ]]; then
+                        if test $DB_COUNT -eq 1; then
+                            ZABBIX_DB_INV=$(echo "{ \"data\": [")
+                        fi
+                        ZABBIX_DB_INV=$(echo "$ZABBIX_DB_INV{ \"{#DB}\":\"$CONTAINER_NAME\" }")
+                        if test $DB_COUNT -ne $DB_COUNT_VAR; then
+                            ZABBIX_DB_INV=$(echo "$ZABBIX_DB_INV,")
+                        fi
+                        if test $DB_COUNT -eq $DB_COUNT_VAR; then
+                            ZABBIX_DB_INV=$(echo "$ZABBIX_DB_INV]}")
+                        fi
+                    fi
                 else
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
                     ((DB_BACKUP_ERRORS++))
                 fi
+                DB_SIZE_AFTER_H=$(du -hs $SQLFILE | awk '{print $1}')
+                DB_SIZE_AFTER=$(du -s $SQLFILE | awk '{print $1}')
                 echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-mysql-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
+                if [[ $ZABBIX == "yes" ]]; then
+                    echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA    
+                fi
             fi
             
         elif [[ $DB_VERSION == *"postgres"* ]]; then
@@ -232,12 +268,27 @@ function Backup-Database {
                 if test $status -eq 0; then
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup database of $CONTAINER_NAME completed."
                     ((DB_COUNT++))
+                    if [[ $ZABBIX == "yes" ]]; then
+                        if test $DB_COUNT -eq 1; then
+                            ZABBIX_DB_INV=$(echo "{ \"data\": [")
+                        fi
+                        ZABBIX_DB_INV=$(echo "$ZABBIX_DB_INV{ \"{#DB}\":\"$CONTAINER_NAME\" }")
+                        if test $DB_COUNT -ne $DB_COUNT_VAR; then
+                            ZABBIX_DB_INV=$(echo "$ZABBIX_DB_INV,")
+                        fi
+                        if test $DB_COUNT -eq $DB_COUNT_VAR; then
+                            ZABBIX_DB_INV=$(echo "$ZABBIX_DB_INV]}")
+                        fi
+                    fi
                 else
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
                     ((DB_BACKUP_ERRORS++))
                 fi
                 DB_SIZE_AFTER_H=$(du -hs $SQLFILE | awk '{print $1}')
                 echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-postgres-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
+                if [[ $ZABBIX == "yes" ]]; then
+                    echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA    
+                fi
             fi
         else
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't get credentials of $CONTAINER_NAME."
@@ -277,10 +328,11 @@ function Run-informations {
     FOLDER_TOTAL_SIZE_COMPRESSED_H=$(du -hs $BACKUPFOLDER | awk '{print $1}')
     FREE_SPACE_AFTER_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE BEFORE : $FREE_SPACE_H"
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE (after compression) : ~ $FOLDER_TOTAL_SIZE_H ($FOLDER_TOTAL_SIZE_COMPRESSED_H)"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
     echo "$(<folders.txt)" 
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP DATABASE SIZE : ~ $DB_TOTAL_SIZE_H"
     echo "$(<databases.txt)" 
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP TOTAL SIZE COMPRESSED : ~ $FOLDER_TOTAL_SIZE_COMPRESSED_H"
     rm folders.txt databases.txt
     echo ""
     printf '=%.0s' {1..100}
@@ -327,24 +379,26 @@ function Send-to-kDrive {
 
 # Send to Zabbix
 function Send-To-Zabbix {
-    echo "\"$ZABBIX_HOST"\" key.date-last-backup $DATE >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.backup-size $FOLDER_TOTAL_SIZE >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.backup-size-compressed $FOLDER_TOTAL_SIZE_COMPRESSED >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.backup-time $RUN_TIME >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.folder-backup-errors $FOLDERS_BACKUP_ERRORS >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.folder-backup-count $FOLDERS_COUNT >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.folder-backup-list $FOLDER_LIST >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.db-backup-errors $DB_BACKUP_ERRORS >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.db-backup-count $DB_COUNT >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.db-backup-list $DB_LIST >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.send-swissbackup-status $SWISSBACKUP_STATUS >> $ZABBIX_DATA
-    echo "\"$ZABBIX_HOST"\" key.send-kdrive-status $KDRIVE_STATUS >> $ZABBIX_DATA
 
-    
     if [[ $DRY_RUN == "yes" ]]; then
-        $DRY Send data to Zabbix server (Host : $ZABBIX_HOST - Server : $ZABBIX_SRV) $DRY2
+        $DRY "Send data to Zabbix server (Host : "$ZABBIX_HOST" / Server : "$ZABBIX_SRV")" $DRY2
     else
-        zabbix_sender -z $ZABBIX_SRV -i $ZABBIX_DATA2
+        echo "\"$ZABBIX_HOST"\" date.last.backup $DATE >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.size $FOLDER_TOTAL_SIZE >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.size.compressed $FOLDER_TOTAL_SIZE_COMPRESSED >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.time $RUN_TIME >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" folder.backup.errors $FOLDERS_BACKUP_ERRORS >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" folder.backup.count $FOLDERS_COUNT >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" folder.backup.list $FOLDER_LIST >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" db.backup.errors $DB_BACKUP_ERRORS >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" db.backup.count $DB_COUNT >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" db.backup.list $DB_LIST >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" send.swissbackup.status $SWISSBACKUP_STATUS >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" send.kdrive.status $KDRIVE_STATUS >> $ZABBIX_DATA
+        zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
+        zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
+        sleep 5
+        zabbix_sender -z $ZABBIX_SRV -i $ZABBIX_DATA
         status=$?
         if test $status -eq 0; then
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
@@ -352,11 +406,14 @@ function Send-To-Zabbix {
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the send data to Zabbix."
         fi
     fi
+    echo ""
+    printf '=%.0s' {1..100}
+    echo ""
 }
 
 # Discord Notifications
 function Send-Discord-Notifications {
-    ./discord.sh --webhook-url=$DISCORD_WEBHOOK --username "BACKUP-NURION" --text "Backup of $DATE" --title "Folders and databases have been successfully backed up !" --description "**Folders ($FOLDER_TOTAL_SIZE_H) :\n** $FOLDER_LIST\n**Databases ($DB_TOTAL_SIZE_H) :\n** $DB_LIST\n**Time :** $RUN_TIME_H" --color 0x4BF646 --footer "$BACKUP_STATUS" --footer-icon "https://send.papamica.fr/f.php?h=0QpaiREO&p=1"
+    ./discord.sh --webhook-url=$DISCORD_WEBHOOK --username "BACKUP-NURION" --text "Backup of $DATE" --title "Folders and databases have been successfully backed up !" --description "**Folders ($FOLDER_TOTAL_SIZE_H) :\n** $FOLDER_LIST\n\n**Databases ($DB_TOTAL_SIZE_H) :\n** $DB_LIST\n\n**Time :**\n $RUN_TIME_H" --color 0x4BF646 --footer "$BACKUP_STATUS" --footer-icon "https://send.papamica.fr/f.php?h=0QpaiREO&p=1"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Notification are sended to Discord"
     echo ""
     printf '=%.0s' {1..100}
@@ -372,8 +429,7 @@ function Send-Discord-Notifications {
 # Cleanup
 
 # Execution
-START_TIME="date +%s"
-Install-Requirements
+START_TIME=$(date +%s)
 if [[ $KDRIVE == "yes" ]]; then
     Create-Rclone-Config-kDrive
 fi
@@ -398,7 +454,7 @@ else
         Send-to-Swiss-Backup
     fi
 fi
-END_TIME="date +%s"
+END_TIME=$(date +%s)
 RUN_TIME=$((END_TIME-START_TIME))
 RUN_TIME_H=$(eval "echo $(date -ud "@$RUN_TIME" +'$((%s/3600/24)) days %H hours %M minutes %S seconds')")
 if [[ $DISCORD == "yes" ]]; then
