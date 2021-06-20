@@ -8,7 +8,7 @@ TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
 WORKFOLDER="/apps/backups"
 BACKUPFOLDER="backup-$DATE"
 KDRIVE="yes" # Do you want send backups to kDrive ?
-SWISS_BACKUP="yes" # Do you want send backups to Swiss-Backup ?
+SWISS_BACKUP="yes" # Do you want send backups to SwissBackup ?
 ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
 DISCORD="yes" # Do you want Discord Notifications ? Check Discord Config 
 DOCKER="yes" # Have you Docker on this server ?
@@ -30,13 +30,15 @@ kd_folder="" # Exemple : "Mickael Asseline/BACKUPS-SERVERS"
 sb_type="swift"
 sb_user=""
 sb_key=""
-sb_auth="https://swiss-backup02.infomaniak.com/identity/v3"
+sb_auth="https://SwissBackup02.infomaniak.com/identity/v3"
 sb_domain="default"
 sb_tenant=""
 sb_tenant_domain="default"
 sb_region="RegionOne"
 sb_storage_url=""
 sb_auth_version=""
+
+SB_QUOTA="1000" # QUOTA of your SwissBackup account
 
 
 
@@ -106,22 +108,22 @@ function Create-Rclone-Config-kDrive {
     echo ""
 }
 
-# Create rclone config Swiss-Backup
-function Create-Rclone-Config-Swiss-Backup {
-    RCLONE_CHECK_SWISS_BACKUP=$(rclone config show | grep Swiss-Backup)
+# Create rclone config SwissBackup
+function Create-Rclone-Config-SwissBackup {
+    RCLONE_CHECK_SWISS_BACKUP=$(rclone config show | grep SwissBackup)
     if [ -n "$RCLONE_CHECK_SWISS_BACKUP" ]; then
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Swiss-Backup config already exist."
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   SwissBackup config already exist."
     else
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Create Swiss-Backup config for rclone."
-        $DRY rclone config create Swiss-Backup swift user "$sb_user" key "$sb_key" auth "$sb_auth" domain "$sb_domain" tenant "$sb_tenant" tenant_domain "$sb_tenant_domain" region "$sb_region" $DRY2
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Create SwissBackup config for rclone."
+        $DRY rclone config create SwissBackup swift user "$sb_user" key "$sb_key" auth "$sb_auth" domain "$sb_domain" tenant "$sb_tenant" tenant_domain "$sb_tenant_domain" region "$sb_region" $DRY2
         if [[ $DRY_RUN == "yes" ]]; then
-            $DRY Create Rclone config for Swiss-Backup $DRY2
+            $DRY Create Rclone config for SwissBackup $DRY2
         else
-            RCLONE_CHECK_SWISS_BACKUP=$(rclone config show | grep Swiss-Backup)
+            RCLONE_CHECK_SWISS_BACKUP=$(rclone config show | grep SwissBackup)
             if [ -n "$RCLONE_CHECK_SWISS_BACKUP" ]; then
-                echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Swiss-Backup config created for rclone."
+                echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   SwissBackup config created for rclone."
             else
-                echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Swiss-Backup config didn't created, please check that !"
+                echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : SwissBackup config didn't created, please check that !"
                 exit
             fi
         fi
@@ -342,17 +344,17 @@ function Run-informations {
 }
 
 # Send to Swiss Backup
-function Send-to-Swiss-Backup {
+function Send-to-SwissBackup {
     SWISSBACKUP_STATUS=0
-    rclone mkdir Swiss-Backup:$BACKUPFOLDER
-    rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$BACKUPFOLDER Swiss-Backup:$BACKUPFOLDER
+    rclone mkdir SwissBackup:$BACKUPFOLDER
+    rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$BACKUPFOLDER SwissBackup:$BACKUPFOLDER
     status=$?
     if test $status -eq 0; then
-        BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 Swiss-Backup")
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to Swiss-Backup."
+        BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 SwissBackup")
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to SwissBackup."
     else
-        BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 Swiss-Backup")
-        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to Swiss-Backup."
+        BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 SwissBackup")
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to SwissBackup."
         ((SWISSBACKUP_STATUS++))
     fi
 
@@ -385,6 +387,62 @@ function Send-To-Zabbix {
     if [[ $DRY_RUN == "yes" ]]; then
         $DRY "Send data to Zabbix server (Host : "$ZABBIX_HOST" / Server : "$ZABBIX_SRV")" $DRY2
     else
+        if [[ $KDRIVE == "yes" ]]; then
+            ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS kDrive")
+        fi
+        if [[ $SWISS_BACKUP == "yes" ]]; then
+            ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS SwissBackup")
+        fi
+        DESTINATIONS_COUNT=0
+        DESTINATIONS_COUNT_VAR=$(echo $ZABBIX_DESTINATIONS | wc -w)
+        for DESTINATION in $ZABBIX_DESTINATIONS; do
+            ((DESTINATIONS_COUNT++))
+            if test $DESTINATIONS_COUNT -eq 1; then
+                ZABBIX_DESTINATIONS=$(echo "{ \"data\": [")
+            fi
+            ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS{ \"{#DESTINATION}\":\"$DESTINATION\" }")
+            if test $DESTINATIONS_COUNT -ne $DESTINATIONS_COUNT_VAR; then
+                ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS,")
+            fi
+            if test $DESTINATIONS_COUNT -eq $DESTINATIONS_COUNT_VAR; then
+                ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS]}")
+            fi
+            
+            if [[ $DESTINATION == "SwissBackup" ]]; then
+                ZB_TOTAL=$(echo "$SB_QUOTA * 1000000000" | bc)
+            else
+                ZB_TOTAL_TEMP=$(rclone about $DESTINATION: | grep Total | awk '{print $2}')
+                if [[ ${ZB_TOTAL_TEMP: -1} == "T" ]]; then
+                    ZB_TOTAL=$(echo "${ZB_TOTAL_TEMP::-1} * 1000000000000" | bc)
+                    elif [[ ${ZB_TOTAL_TEMP: -1} == "G" ]]; then
+                        ZB_TOTAL=$(echo "${ZB_TOTAL_TEMP::-1} * 1000000000" | bc)
+                    elif [[ ${ZB_TOTAL_TEMP: -1} == "M" ]]; then
+                        ZB_TOTAL=$(echo "${ZB_TOTAL_TEMP::-1} * 1000000" | bc)
+                    elif [[ ${ZB_TOTAL_TEMP: -1} == "K" ]]; then
+                        ZB_TOTAL=$(echo "${ZB_TOTAL_TEMP::-1} * 1000" | bc)
+                    else
+                        ZB_TOTAL=$ZB_TOTAL_TEMP
+                fi
+            fi
+            ZB_USED_TEMP=$(rclone about $DESTINATION: | grep Used | awk '{print $2}')
+            if [[ ${ZB_USED_TEMP: -1} == "T" ]]; then
+                ZB_USED=$(echo "${ZB_USED_TEMP::-1} * 1000000000000" | bc)
+                elif [[ ${ZB_USED_TEMP: -1} == "G" ]]; then
+                    ZB_USED=$(echo "${ZB_USED_TEMP::-1} * 1000000000" | bc)
+                elif [[ ${ZB_USED_TEMP: -1} == "M" ]]; then
+                    ZB_USED=$(echo "${ZB_USED_TEMP::-1} * 1000000" | bc)
+                elif [[ ${ZB_USED_TEMP: -1} == "K" ]]; then
+                    ZB_USED=$(echo "${ZB_USED_TEMP::-1} * 1000" | bc)
+                else
+                    ZB_USED=$ZB_USED_TEMP
+            fi
+            ZB_POURCENT_USED=$(echo "$ZB_USED * 100 / $ZB_TOTAL" | bc)
+
+            echo "\"$ZABBIX_HOST"\" backup.total[$DESTINATION] $ZB_TOTAL >> $ZABBIX_DATA
+            echo "\"$ZABBIX_HOST"\" backup.used[$DESTINATION] $ZB_USED >> $ZABBIX_DATA
+            echo "\"$ZABBIX_HOST"\" backup.used.pourcent[$DESTINATION] $ZB_POURCENT_USED >> $ZABBIX_DATA
+        done
+
         echo "\"$ZABBIX_HOST"\" date.last.backup $DATE >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.size $FOLDER_TOTAL_SIZE >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.size.compressed $FOLDER_TOTAL_SIZE_COMPRESSED >> $ZABBIX_DATA
@@ -396,16 +454,23 @@ function Send-To-Zabbix {
         echo "\"$ZABBIX_HOST"\" db.backup.count $DB_COUNT >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" db.backup.list $DB_LIST >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" send.swissbackup.status $SWISSBACKUP_STATUS >> $ZABBIX_DATA
-        echo "\"$ZABBIX_HOST"\" send.kdrive.status $KDRIVE_STATUS >> $ZABBIX_DATA
+
         zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
         zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
-        sleep 120
+        zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.destinations.discovery" -o "$ZABBIX_DESTINATIONS"
         zabbix_sender -z $ZABBIX_SRV -i $ZABBIX_DATA
         status=$?
         if test $status -eq 0; then
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
         else
-            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the send data to Zabbix."
+            sleep 120
+            zabbix_sender -vv -z $ZABBIX_SRV -i $ZABBIX_DATA
+            status=$?
+            if test $status -eq 0; then
+                echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the send data to Zabbix."
+            else
+                echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
+            fi
         fi
     fi
     echo ""
@@ -436,7 +501,7 @@ if [[ $KDRIVE == "yes" ]]; then
     Create-Rclone-Config-kDrive
 fi
 if [[ $SWISS_BACKUP == "yes" ]]; then
-    Create-Rclone-Config-Swiss-Backup
+    Create-Rclone-Config-SwissBackup
 fi
 
 Backup-Folders
@@ -453,7 +518,7 @@ else
         Send-to-kDrive
     fi
     if [[ $SWISS_BACKUP == "yes" ]]; then
-        Send-to-Swiss-Backup
+        Send-to-SwissBackup
     fi
 fi
 END_TIME=$(date +%s)
