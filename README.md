@@ -103,7 +103,7 @@ Lancez le script :
 
 ## Les paramètres disponibles
 ### Dry run
-Avec `--dry-run` vous pouvez avoir un aperçu de ce que va faire le script avec de l’exécuter.
+Avec `--dry-run` vous pouvez avoir un aperçu de ce que va faire le script avant de l’exécuter.
 ### List backup
 Avec `--list-backup <CONFIG_RCLONE>` vous pouvez lister les sauvegardes disponibles dans votre stockage externalisé.
 ### Zabbix send
