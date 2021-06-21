@@ -4,6 +4,7 @@
 
 # Variables
 DATE=$(date +%Y-%m-%d)
+HOUR=$(date +%H:%M:%S)
 TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
 WORKFOLDER="/apps/backups"
 BACKUPFOLDER="backup-$DATE"
@@ -12,7 +13,7 @@ SWISS_BACKUP="yes" # Do you want send backups to SwissBackup ?
 ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
 DISCORD="yes" # Do you want Discord Notifications ? Check Discord Config 
 DOCKER="yes" # Have you Docker on this server ?
-FOLDERS="/home /root /apps" #Folders to backup (ex : /var/lib/docker /apps)
+FOLDERS="/home /root /apps" # Folders to backup (ex : /var/lib/docker /apps)
 EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data /apps/docker/image /apps/docker/overlay2"
 EXCLUDE_EXTENSIONS=".mkv .tmp"
 RETENTION_DAYS=30 # Number of days until object is deleted
@@ -40,7 +41,8 @@ sb_auth_version=""
 
 SB_QUOTA="1000" # QUOTA of your SwissBackup account
 
-
+# Other rClone configurations :
+RCLONE_CONFIGS="" # Config rClone to use. Separated by space. Not officially supported.
 
 # Zabbix Config
 ZABBIX_SENDER="/usr/bin/zabbix_sender"
@@ -56,7 +58,6 @@ DISCORD_WEBHOOK=""
 
 
 if [[ $1 =~ "--dry-run" ]]; then
-    HOUR=$(date +%Y-%m-%d_%H:%M:%S)
     DRY='echo ['$(date +%Y-%m-%d_%H:%M:%S)']---BackupScript---🚧---DRY RUN : [ '
     DRY2=' ]'
     DRY_RUN="yes"
@@ -316,7 +317,7 @@ function Backup-Database {
 
 # Informations
 function Dry-informations {
-    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
+    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024); print $1,"G";}')
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE : $FREE_SPACE_H"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
     echo ""
@@ -327,7 +328,7 @@ function Dry-informations {
 function Run-informations {
     DB_TOTAL_SIZE_H=$(du -bhs $BACKUPFOLDER/databases/ | awk '{print $1}')
     DB_TOTAL_SIZE=$(du -bs $BACKUPFOLDER/databases/ | awk '{print $1}')
-    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^2); print $1,"GB";}')
+    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024); print $1,"G";}')
     FOLDER_TOTAL_SIZE_COMPRESSED=$(du -bs $BACKUPFOLDER | awk '{print $1}')
     FOLDER_TOTAL_SIZE_COMPRESSED_H=$(du -bhs $BACKUPFOLDER | awk '{print $1}')
     FREE_SPACE_AFTER_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
@@ -345,17 +346,16 @@ function Run-informations {
 
 # Send to Swiss Backup
 function Send-to-SwissBackup {
-    SWISSBACKUP_STATUS=0
     rclone mkdir SwissBackup:$BACKUPFOLDER
     rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$BACKUPFOLDER SwissBackup:$BACKUPFOLDER
     status=$?
     if test $status -eq 0; then
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 SwissBackup")
+        ZB_BACKUP_STATUS=$(echo "$ZB_BACKUP_STATUS kDrive")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to SwissBackup."
     else
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 SwissBackup")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to SwissBackup."
-        ((SWISSBACKUP_STATUS++))
     fi
 
     echo ""
@@ -365,20 +365,39 @@ function Send-to-SwissBackup {
 
 # Send to kDrive
 function Send-to-kDrive {
-    KDRIVE_STATUS=0
     rclone -P copy $WORKFOLDER/$BACKUPFOLDER kDrive:$BACKUPFOLDER
     status=$?
     if test $status -eq 0; then
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 kDrive")
+        ZB_BACKUP_STATUS=$(echo "$ZB_BACKUP_STATUS kDrive")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to kDrive."
     else
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 kDrive")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to kDrive."
-        ((KDRIVE_STATUS++))
     fi
     echo ""
     printf '=%.0s' {1..100}
     echo ""
+}
+
+# Send to other configurations rClone
+function Send-to-config-rclone {
+    for CONFIG in $RCLONE_CONFIGS; do
+        ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS $CONFIG")
+        rclone -P copy $WORKFOLDER/$BACKUPFOLDER $CONFIG:$BACKUPFOLDER
+        status=$?
+        if test $status -eq 0; then
+            BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 $CONFIG")
+            ZB_BACKUP_STATUS=$(echo "$ZB_BACKUP_STATUS $CONFIG")
+            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to $CONFIG."
+        else
+            BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 $CONFIG")
+            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to $CONFIG."
+        fi
+        echo ""
+        printf '=%.0s' {1..100}
+        echo ""
+    done
 }
 
 # Send to Zabbix
@@ -439,23 +458,29 @@ function Send-To-Zabbix {
             ZB_POURCENT_USED=$(echo "$ZB_USED * 100 / $ZB_TOTAL" | bc)
             ZB_FREE=$(echo "$ZB_TOTAL - $ZB_USED" | bc)
 
+            if [[ $ZB_BACKUP_STATUS == *"$DESTINATION"* ]]; then
+                echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] OK >> $ZABBIX_DATA
+            else
+                echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] ERROR >> $ZABBIX_DATA
+            fi
+
             echo "\"$ZABBIX_HOST"\" backup.total[$DESTINATION] $ZB_TOTAL >> $ZABBIX_DATA
             echo "\"$ZABBIX_HOST"\" backup.free[$DESTINATION] $ZB_FREE >> $ZABBIX_DATA
             echo "\"$ZABBIX_HOST"\" backup.used[$DESTINATION] $ZB_USED >> $ZABBIX_DATA
             echo "\"$ZABBIX_HOST"\" backup.used.pourcent[$DESTINATION] $ZB_POURCENT_USED >> $ZABBIX_DATA
         done
 
-        echo "\"$ZABBIX_HOST"\" date.last.backup $DATE >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.date.last $DATE >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.hour.last $HOUR >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.size $FOLDER_TOTAL_SIZE >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.size.compressed $FOLDER_TOTAL_SIZE_COMPRESSED >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.time $RUN_TIME >> $ZABBIX_DATA
-        echo "\"$ZABBIX_HOST"\" folder.backup.errors $FOLDERS_BACKUP_ERRORS >> $ZABBIX_DATA
-        echo "\"$ZABBIX_HOST"\" folder.backup.count $FOLDERS_COUNT >> $ZABBIX_DATA
-        echo "\"$ZABBIX_HOST"\" folder.backup.list $FOLDER_LIST >> $ZABBIX_DATA
-        echo "\"$ZABBIX_HOST"\" db.backup.errors $DB_BACKUP_ERRORS >> $ZABBIX_DATA
-        echo "\"$ZABBIX_HOST"\" db.backup.count $DB_COUNT >> $ZABBIX_DATA
-        echo "\"$ZABBIX_HOST"\" db.backup.list $DB_LIST >> $ZABBIX_DATA
-        echo "\"$ZABBIX_HOST"\" send.swissbackup.status $SWISSBACKUP_STATUS >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.folder.errors $FOLDERS_BACKUP_ERRORS >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.folder.count $FOLDERS_COUNT >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.folder.list $FOLDER_LIST >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.db.errors $DB_BACKUP_ERRORS >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.db.count $DB_COUNT >> $ZABBIX_DATA
+        echo "\"$ZABBIX_HOST"\" backup.db.list $DB_LIST >> $ZABBIX_DATA
 
         zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
         zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
@@ -521,6 +546,9 @@ else
     fi
     if [[ $SWISS_BACKUP == "yes" ]]; then
         Send-to-SwissBackup
+    fi
+    if [ -n "$RCLONE_CONFIGS" ]; then
+        Send-to-config-rclone
     fi
 fi
 END_TIME=$(date +%s)
