@@ -104,7 +104,7 @@ Run the script :
 ./backup-script.sh
 ```
 
-## Cronjog
+## Cronjob
 Start backup every day at 02h
 ```sh
 crontab -e
