@@ -330,6 +330,7 @@ function Run-informations {
 #####                                 SEND TO SWISSBACKUP                                 #####
 ###############################################################################################
 function Send-to-SwissBackup {
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Send to SwissBackup started."
     rclone mkdir SwissBackup:$SERVER_NAME/$BACKUPFOLDER
     rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER SwissBackup:$SERVER_NAME/$BACKUPFOLDER
     status=$?
@@ -351,6 +352,7 @@ function Send-to-SwissBackup {
 #####                                    SEND TO KDRIVE                                   #####
 ###############################################################################################
 function Send-to-kDrive {
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Send to kDrive started."
     rclone -P copy $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER kDrive:$SERVER_NAME/$BACKUPFOLDER
     status=$?
     if test $status -eq 0; then
@@ -371,6 +373,7 @@ function Send-to-kDrive {
 ###############################################################################################
 function Send-to-config-rclone {
     for CONFIG in $RCLONE_CONFIGS; do
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Send to $CONFIG started."
         ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS $CONFIG")
         rclone -P copy $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER $CONFIG:$SERVER_NAME/$BACKUPFOLDER
         status=$?
