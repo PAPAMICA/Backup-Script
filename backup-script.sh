@@ -1,63 +1,25 @@
 #!/bin/bash
 
+###############################################################################################
+#####                                    BACKUP SCRIPT                                    #####
+#####                             BY MICKAEL ASSELINE (PAPAMICA)                          #####
+#####                                     WIKI-TECH.IO                                    #####
+###############################################################################################
 
+###############################################################################################
+#####                                   GET CONFIG FILE                                   #####
+###############################################################################################
+FILE_CONF="backup-script.conf"
+if [[ -r $FILE ]]; then
+    . $FILE_CONF
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Config file charged !"
+else
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't charge config file !"
+fi
 
-# Variables
-DATE=$(date +%Y-%m-%d)
-HOUR=$(date +%H:%M:%S)
-TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
-WORKFOLDER="/apps/backups"
-SERVER_NAME="NURION"
-BACKUPFOLDER="backup-$DATE"
-KDRIVE="yes" # Do you want send backups to kDrive ?
-SWISS_BACKUP="yes" # Do you want send backups to SwissBackup ?
-ZABBIX="yes" # Have you a Zabbix server ? Check Zabbix Config
-DISCORD="yes" # Do you want Discord Notifications ? Check Discord Config 
-DOCKER="yes" # Have you Docker on this server ?
-FOLDERS="/home /root /apps" # Folders to backup (ex : /var/lib/docker /apps)
-EXCLUDE_FOLDERS="$WORKFOLDER /home/debian /apps/data /apps/docker/image /apps/docker/overlay2"
-EXCLUDE_EXTENSIONS=".mkv .tmp"
-RETENTION_DAYS=30 # Number of days until object is deleted
-SEGMENT_SIZE="256M"
-
-
-
-# kDrive Config
-kd_user="" # Your Infomaniak's mail
-kd_pass="" # App's password : https://manager.infomaniak.com/v3/profile/application-password
-kd_folder="" # Exemple : "Mickael Asseline/BACKUPS-SERVERS"
-
-
-# Swiss Backup Config
-sb_type="swift"
-sb_user=""
-sb_key=""
-sb_auth="https://SwissBackup02.infomaniak.com/identity/v3"
-sb_domain="default"
-sb_tenant=""
-sb_tenant_domain="default"
-sb_region="RegionOne"
-sb_storage_url=""
-sb_auth_version=""
-
-SB_QUOTA="1000" # QUOTA of your SwissBackup account
-
-# Other rClone configurations :
-RCLONE_CONFIGS="" # Config rClone to use. Separated by space. Not officially supported.
-
-# Zabbix Config
-ZABBIX_SENDER="/usr/bin/zabbix_sender"
-ZABBIX_HOST="NURION" # Name of your host
-ZABBIX_SRV="" # IP of your Zabbix server or proxy
-ZABBIX_DATA="/var/log/backupscript_zabbix_$TIMESTAMP.log"
-
-
-# Discord Config
-DISCORD_WEBHOOK=""
-
-# ------------------------------------------------------------------------------------------------------ #
-
-
+###############################################################################################
+#####                                  CHECK IF --dry-run                                 #####
+###############################################################################################
 if [[ $1 =~ "--dry-run" ]]; then
     DRY='echo ['$(date +%Y-%m-%d_%H:%M:%S)']---BackupScript---🚧---DRY RUN : [ '
     DRY2=' ]'
@@ -68,6 +30,9 @@ else
     DRY_RUN="no"
 fi
 
+###############################################################################################
+#####                                CHECK IF --list-backup                               #####
+###############################################################################################
 if [[ $1 =~ "--list-backup" ]]; then
     LIST_BACKUP=$2
 fi
@@ -76,11 +41,13 @@ FREE_SPACE_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
 FREE_SPACE=$(df $WORKFOLDER | awk 'FNR==2{print $4}')
 DELETE_AFTER=$(( $RETENTION_DAYS * 24 * 60 * 60 ))
 
-# Installation of requirements
+###############################################################################################
+#####                                 INSTALL REQUIREMENTS                                #####
+###############################################################################################
 function Install-Requirements {
-    apt install -y mariadb-client pv curl zabbix-sender
+    apt install -y mariadb-client pv curl zabbix-sender jq
     curl https://rclone.org/install.sh | sudo bash
-    "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅  All requirements is installed."
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅  All requirements is installed."
     echo ""
     printf '=%.0s' {1..100}
     echo ""
@@ -88,7 +55,9 @@ function Install-Requirements {
 
 
 
-# Create rclone config kDrive
+###############################################################################################
+#####                           CREATE RCLONE CONFIG FOR KDRIVE                           #####
+###############################################################################################
 function Create-Rclone-Config-kDrive {
     RCLONE_CHECK_KDRIVE=$(rclone config show | grep kDrive)
     if [ -n "$RCLONE_CHECK_KDRIVE" ]; then
@@ -114,7 +83,9 @@ function Create-Rclone-Config-kDrive {
     echo ""
 }
 
-# Create rclone config SwissBackup
+###############################################################################################
+#####                         CREATE RCLONE CONFIG FOR SWISSBACKUP                        #####
+###############################################################################################
 function Create-Rclone-Config-SwissBackup {
     RCLONE_CHECK_SWISS_BACKUP=$(rclone config show | grep SwissBackup)
     if [ -n "$RCLONE_CHECK_SWISS_BACKUP" ]; then
@@ -141,7 +112,9 @@ function Create-Rclone-Config-SwissBackup {
 
 
 
-# Create archives of folders
+###############################################################################################
+#####                              BACKUP FOLDERS TO ARCHIVES                             #####
+###############################################################################################
 function Backup-Folders {
     FOLDERS_BACKUP_ERRORS=0
     FOLDERS_COUNT=0
@@ -214,7 +187,9 @@ function Backup-Folders {
 
 
 
-# Create dump of databases Dockers
+###############################################################################################
+#####                             DUMP ALL CONTAINERS DATABASES                           #####
+###############################################################################################
 function Backup-Database {
     DB_BACKUP_ERRORS=0
     DB_COUNT=0
@@ -320,7 +295,9 @@ function Backup-Database {
     echo ""
 }
 
-# Informations
+###############################################################################################
+#####                                  SHOW INFORMATIONS                                  #####
+###############################################################################################
 function Dry-informations {
     FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^3); print $1,"G";}')
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE : $FREE_SPACE_H"
@@ -349,7 +326,9 @@ function Run-informations {
     echo ""
 }
 
-# Send to Swiss Backup
+###############################################################################################
+#####                                 SEND TO SWISSBACKUP                                 #####
+###############################################################################################
 function Send-to-SwissBackup {
     rclone mkdir SwissBackup:$SERVER_NAME/$BACKUPFOLDER
     rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER SwissBackup:$SERVER_NAME/$BACKUPFOLDER
@@ -368,7 +347,9 @@ function Send-to-SwissBackup {
     echo ""
 }
 
-# Send to kDrive
+###############################################################################################
+#####                                    SEND TO KDRIVE                                   #####
+###############################################################################################
 function Send-to-kDrive {
     rclone -P copy $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER kDrive:$SERVER_NAME/$BACKUPFOLDER
     status=$?
@@ -385,7 +366,9 @@ function Send-to-kDrive {
     echo ""
 }
 
-# Send to other configurations rClone
+###############################################################################################
+#####                             SEND TO OTHER CONFIG RCLONE                             #####
+###############################################################################################
 function Send-to-config-rclone {
     for CONFIG in $RCLONE_CONFIGS; do
         ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS $CONFIG")
@@ -405,12 +388,16 @@ function Send-to-config-rclone {
     done
 }
 
-# List backup
+###############################################################################################
+#####                                     LIST BACKUP                                     #####
+###############################################################################################
 function List-Backup {
     rclone lsf $LIST_BACKUP:$SERVER_NAME
 }
 
-# Send to Zabbix
+###############################################################################################
+#####                             SEND INFORMATIONS TO ZABBIX                             #####
+###############################################################################################
 function Send-To-Zabbix {
 
     if [[ $DRY_RUN == "yes" ]]; then
@@ -515,7 +502,9 @@ function Send-To-Zabbix {
     echo ""
 }
 
-# Discord Notifications
+###############################################################################################
+#####                              SEND DISCORD NOTIFICATION                              #####
+###############################################################################################
 function Send-Discord-Notifications {
     ./discord.sh --webhook-url=$DISCORD_WEBHOOK --username "[$SERVER_NAME]" --text "Backup of $DATE" --title "Folders and databases have been successfully backed up !" --description "**Folders ($FOLDER_TOTAL_SIZE_H) :\n** $FOLDER_LIST\n\n**Databases ($DB_TOTAL_SIZE_H) :\n** $DB_LIST\n\n**Time :**\n $RUN_TIME_H" --color 0x4BF646 --footer "$BACKUP_STATUS" --footer-icon "https://send.papamica.fr/f.php?h=0QpaiREO&p=1"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Notification are sended to Discord"
@@ -526,13 +515,9 @@ function Send-Discord-Notifications {
 
 
 
-# List backups
-
-
-
-# Cleanup
-
-# Execution
+###############################################################################################
+#####                                      EXECUTION                                      #####
+###############################################################################################
 if [ -n "$LIST_BACKUP" ]; then
     List-Backup
     exit
