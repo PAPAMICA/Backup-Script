@@ -143,7 +143,7 @@ function Backup-Folders {
     FOLDER_COUNT_VAR=$(echo $FOLDERS | wc -w)
     echo ""
     cd $WORKFOLDER
-    $DRY /bin/mkdir $BACKUPFOLDER $DRY2
+    $DRY /bin/mkdir -p $BACKUPFOLDER $DRY2
     if [ -n "$EXCLUDE_FOLDERS" ]; then
         ARG_EXCLUDE_FOLDER=""
         for FOLDEREX in $EXCLUDE_FOLDERS; do
@@ -459,9 +459,9 @@ function Send-To-Zabbix {
             ZB_FREE=$(echo "$ZB_TOTAL - $ZB_USED" | bc)
 
             if [[ $ZB_BACKUP_STATUS == *"$DESTINATION"* ]]; then
-                echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] OK >> $ZABBIX_DATA
+                echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] 0 >> $ZABBIX_DATA
             else
-                echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] ERROR >> $ZABBIX_DATA
+                echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] 1 >> $ZABBIX_DATA
             fi
 
             echo "\"$ZABBIX_HOST"\" backup.total[$DESTINATION] $ZB_TOTAL >> $ZABBIX_DATA
