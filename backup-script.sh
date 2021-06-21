@@ -496,10 +496,10 @@ function Send-To-Zabbix {
         echo "\"$ZABBIX_HOST"\" backup.db.count $DB_COUNT >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.db.list $DB_LIST >> $ZABBIX_DATA
 
-        zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
-        zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
-        zabbix_sender -z $ZABBIX_SRV -s $ZABBIX_HOST -k "backup.destinations.discovery" -o "$ZABBIX_DESTINATIONS"
-        zabbix_sender -z $ZABBIX_SRV -i $ZABBIX_DATA
+        zabbix_sender -z "$ZABBIX_SRV" -s $ZABBIX_HOST -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
+        zabbix_sender -z "$ZABBIX_SRV" -s $ZABBIX_HOST -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
+        zabbix_sender -z "$ZABBIX_SRV" -s $ZABBIX_HOST -k "backup.destinations.discovery" -o "$ZABBIX_DESTINATIONS"
+        zabbix_sender -z "$ZABBIX_SRV" -i $ZABBIX_DATA
         status=$?
         if test $status -eq 0; then
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
