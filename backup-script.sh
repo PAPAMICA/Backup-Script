@@ -11,7 +11,7 @@
 ###############################################################################################
 FILE_CONF="backup-script.conf"
 if [[ -r $FILE ]]; then
-    . $FILE_CONF
+    source $FILE_CONF
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Config file charged !"
 else
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't charge config file !"
