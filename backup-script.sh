@@ -7,6 +7,7 @@ DATE=$(date +%Y-%m-%d)
 HOUR=$(date +%H:%M:%S)
 TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
 WORKFOLDER="/apps/backups"
+SERVER_NAME="NURION"
 BACKUPFOLDER="backup-$DATE"
 KDRIVE="yes" # Do you want send backups to kDrive ?
 SWISS_BACKUP="yes" # Do you want send backups to SwissBackup ?
@@ -65,6 +66,10 @@ else
     DRY=""
     DRY2=""
     DRY_RUN="no"
+fi
+
+if [[ $1 =~ "--list-backup" ]]; then
+    LIST_BACKUP=$2
 fi
 FOLDER_TOTAL_SIZE=0
 FREE_SPACE_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
@@ -143,7 +148,7 @@ function Backup-Folders {
     FOLDER_COUNT_VAR=$(echo $FOLDERS | wc -w)
     echo ""
     cd $WORKFOLDER
-    $DRY /bin/mkdir -p $BACKUPFOLDER $DRY2
+    $DRY /bin/mkdir -p $SERVER_NAME/$BACKUPFOLDER $DRY2
     if [ -n "$EXCLUDE_FOLDERS" ]; then
         ARG_EXCLUDE_FOLDER=""
         for FOLDEREX in $EXCLUDE_FOLDERS; do
@@ -168,9 +173,9 @@ function Backup-Folders {
         FOLDER_NAME=$(basename $FOLDER)
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup of $FOLDER ($FOLDER_SIZE_H) started."
         if [[ $DRY_RUN == "yes" ]]; then
-                $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz" $DRY2
+                $DRY "Backup $FOLDER (with $ARG_EXCLUDE_FOLDER and $ARG_EXCLUDE_FOLDER) to $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz" $DRY2
             else
-                /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $FOLDER_SIZE | gzip > $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz
+                /bin/tar -c $ARG_EXCLUDE_FOLDER $ARG_EXCLUDE_EXTENSIONS ${FOLDER} -P | pv -s $FOLDER_SIZE | gzip > $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz
                 status=$?
                 if test $status -eq 0; then
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup of $FOLDER completed."
@@ -191,8 +196,8 @@ function Backup-Folders {
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup of $FOLDER."
                     ((FOLDERS_BACKUP_ERRORS++))
                 fi
-                FOLDER_SIZE_AFTER_H=$(du -bhs $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
-                FOLDER_SIZE_AFTER=$(du -bs $BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
+                FOLDER_SIZE_AFTER_H=$(du -bhs $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
+                FOLDER_SIZE_AFTER=$(du -bs $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
                 echo "                                            🔹 [ $FOLDER_NAME ] - $FOLDER : $FOLDER_SIZE_H ($FOLDER_SIZE_AFTER_H)" >> folders.txt
                 if [[ $ZABBIX == "yes" ]]; then
                     echo "\"$ZABBIX_HOST"\" backup.folder.size[$FOLDER_NAME] $FOLDER_SIZE_AFTER >> $ZABBIX_DATA    
@@ -215,7 +220,7 @@ function Backup-Database {
     DB_COUNT=0
     echo ""
     cd $WORKFOLDER
-    $DRY /bin/mkdir -p $BACKUPFOLDER/databases $DRY2
+    $DRY /bin/mkdir -p $SERVER_NAME/$BACKUPFOLDER/databases $DRY2
     CONTAINER_DB=$(docker ps | grep -E 'mariadb|mysql|postgres|-db' | awk '{print $NF}')
     DB_COUNT_VAR=$(echo $CONTAINER_DB | wc -w)
     for CONTAINER_NAME in $CONTAINER_DB; do
@@ -227,7 +232,7 @@ function Backup-Database {
             DB_USER=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_USER"')
             DB_PASSWORD=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_PASSWORD"')
             DB_DATABASE=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_DATABASE"')
-            SQLFILE="$BACKUPFOLDER/databases/$CONTAINER_NAME-mysql-$DATE.sql"
+            SQLFILE="$SERVER_NAME/$BACKUPFOLDER/databases/$CONTAINER_NAME-mysql-$DATE.sql"
             if [[ $DRY_RUN == "yes" ]]; then
                 $DRY Execute dump of database in $CONTAINER_NAME $DRY2
             else
@@ -263,7 +268,7 @@ function Backup-Database {
         elif [[ $DB_VERSION == *"postgres"* ]]; then
             DB_USER=$(docker exec $CONTAINER_NAME bash -c 'echo "$POSTGRES_USER"')
             DB_PASSWORD=$(docker exec $CONTAINER_NAME bash -c 'echo "$POSTGRES_PASSWORD"')
-            SQLFILE="$BACKUPFOLDER/databases/$CONTAINER_NAME-postgres-$DATE.sql"
+            SQLFILE="$SERVER_NAME/$BACKUPFOLDER/databases/$CONTAINER_NAME-postgres-$DATE.sql"
             if [[ $DRY_RUN == "yes" ]]; then
                 $DRY Execute dump of database in $CONTAINER_NAME $DRY2
             else
@@ -326,11 +331,11 @@ function Dry-informations {
 }
 
 function Run-informations {
-    DB_TOTAL_SIZE_H=$(du -bhs $BACKUPFOLDER/databases/ | awk '{print $1}')
-    DB_TOTAL_SIZE=$(du -bs $BACKUPFOLDER/databases/ | awk '{print $1}')
+    DB_TOTAL_SIZE_H=$(du -bhs $SERVER_NAME/$BACKUPFOLDER/databases/ | awk '{print $1}')
+    DB_TOTAL_SIZE=$(du -bs $SERVER_NAME/$BACKUPFOLDER/databases/ | awk '{print $1}')
     FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^3); print $1,"G";}')
-    FOLDER_TOTAL_SIZE_COMPRESSED=$(du -bs $BACKUPFOLDER | awk '{print $1}')
-    FOLDER_TOTAL_SIZE_COMPRESSED_H=$(du -bhs $BACKUPFOLDER | awk '{print $1}')
+    FOLDER_TOTAL_SIZE_COMPRESSED=$(du -bs $SERVER_NAME/$BACKUPFOLDER | awk '{print $1}')
+    FOLDER_TOTAL_SIZE_COMPRESSED_H=$(du -bhs $SERVER_NAME/$BACKUPFOLDER | awk '{print $1}')
     FREE_SPACE_AFTER_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE BEFORE : $FREE_SPACE_H"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
@@ -346,8 +351,8 @@ function Run-informations {
 
 # Send to Swiss Backup
 function Send-to-SwissBackup {
-    rclone mkdir SwissBackup:$BACKUPFOLDER
-    rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$BACKUPFOLDER SwissBackup:$BACKUPFOLDER
+    rclone mkdir SwissBackup:$SERVER_NAME/$BACKUPFOLDER
+    rclone -P copy --header-upload "X-Delete-After: $DELETE_AFTER" $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER SwissBackup:$SERVER_NAME/$BACKUPFOLDER
     status=$?
     if test $status -eq 0; then
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 SwissBackup")
@@ -365,7 +370,7 @@ function Send-to-SwissBackup {
 
 # Send to kDrive
 function Send-to-kDrive {
-    rclone -P copy $WORKFOLDER/$BACKUPFOLDER kDrive:$BACKUPFOLDER
+    rclone -P copy $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER kDrive:$SERVER_NAME/$BACKUPFOLDER
     status=$?
     if test $status -eq 0; then
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 kDrive")
@@ -384,7 +389,7 @@ function Send-to-kDrive {
 function Send-to-config-rclone {
     for CONFIG in $RCLONE_CONFIGS; do
         ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS $CONFIG")
-        rclone -P copy $WORKFOLDER/$BACKUPFOLDER $CONFIG:$BACKUPFOLDER
+        rclone -P copy $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER $CONFIG:$SERVER_NAME/$BACKUPFOLDER
         status=$?
         if test $status -eq 0; then
             BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 $CONFIG")
@@ -398,6 +403,11 @@ function Send-to-config-rclone {
         printf '=%.0s' {1..100}
         echo ""
     done
+}
+
+# List backup
+function List-Backup {
+    rclone lsf $LIST_BACKUP:$SERVER_NAME
 }
 
 # Send to Zabbix
@@ -523,6 +533,11 @@ function Send-Discord-Notifications {
 # Cleanup
 
 # Execution
+if [ -n "$LIST_BACKUP" ]; then
+    List-Backup
+    exit
+fi
+
 START_TIME=$(date +%s)
 if [[ $KDRIVE == "yes" ]]; then
     Create-Rclone-Config-kDrive
@@ -561,4 +576,4 @@ if [[ $ZABBIX == "yes" ]]; then
     Send-To-Zabbix
 fi
 
-rm -rf $WORKFOLDER/$BACKUPFOLDER
+rm -rf $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER
