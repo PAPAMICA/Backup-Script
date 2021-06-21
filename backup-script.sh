@@ -565,4 +565,4 @@ if [[ $ZABBIX == "yes" ]]; then
     Send-To-Zabbix
 fi
 
-rm -rf $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER
+rm -rf $WORKFOLDER/$SERVER_NAME
