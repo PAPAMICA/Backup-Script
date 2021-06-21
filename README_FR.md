@@ -104,6 +104,13 @@ Lancez le script :
 ./backup-script.sh
 ```
 
+## Cronjob
+Lancer une sauvegarde tous les jours à 2h du matin :
+```sh
+crontab -e
+00 02 * * * /apps/Backup-Script/backup-script.sh >> /var/log/BackupScript.log
+```
+
 ## Les paramètres disponibles
 ### Dry run
 Avec `--dry-run` vous pouvez avoir un aperçu de ce que va faire le script avec de l’exécuter.
