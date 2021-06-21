@@ -317,7 +317,7 @@ function Backup-Database {
 
 # Informations
 function Dry-informations {
-    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024); print $1,"G";}')
+    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^3); print $1,"G";}')
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE : $FREE_SPACE_H"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
     echo ""
@@ -328,7 +328,7 @@ function Dry-informations {
 function Run-informations {
     DB_TOTAL_SIZE_H=$(du -bhs $BACKUPFOLDER/databases/ | awk '{print $1}')
     DB_TOTAL_SIZE=$(du -bs $BACKUPFOLDER/databases/ | awk '{print $1}')
-    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024); print $1,"G";}')
+    FOLDER_TOTAL_SIZE_H=$(echo $FOLDER_TOTAL_SIZE | awk '{$1=$1/(1024^3); print $1,"G";}')
     FOLDER_TOTAL_SIZE_COMPRESSED=$(du -bs $BACKUPFOLDER | awk '{print $1}')
     FOLDER_TOTAL_SIZE_COMPRESSED_H=$(du -bhs $BACKUPFOLDER | awk '{print $1}')
     FREE_SPACE_AFTER_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
@@ -351,7 +351,7 @@ function Send-to-SwissBackup {
     status=$?
     if test $status -eq 0; then
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 SwissBackup")
-        ZB_BACKUP_STATUS=$(echo "$ZB_BACKUP_STATUS kDrive")
+        ZB_BACKUP_STATUS=$(echo "$ZB_BACKUP_STATUS SwissBackup")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Backup are uploaded to SwissBackup."
     else
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 SwissBackup")
