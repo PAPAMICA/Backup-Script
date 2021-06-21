@@ -46,7 +46,7 @@ DELETE_AFTER=$(( $RETENTION_DAYS * 24 * 60 * 60 ))
 #####                                 INSTALL REQUIREMENTS                                #####
 ###############################################################################################
 function Install-Requirements {
-    apt install -y mariadb-client pv curl zabbix-sender jq
+    apt install -y mariadb-client pv curl zabbix-sender jq bc
     curl https://rclone.org/install.sh | sudo bash
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅  All requirements is installed."
     echo ""
