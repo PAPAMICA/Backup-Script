@@ -43,6 +43,10 @@ fi
 ###############################################################################################
 if [[ $1 =~ "--zabbix-send" ]]; then
     ZABBIX_SEND="yes"
+else
+    if [[ -r $ZABBIX_DATA ]]; then
+    rm $ZABBIX_DATA
+    fi
 fi
 
 
@@ -51,9 +55,7 @@ FREE_SPACE_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
 FREE_SPACE=$(df $WORKFOLDER | awk 'FNR==2{print $4}')
 DELETE_AFTER=$(( $RETENTION_DAYS * 24 * 60 * 60 ))
 
-if [[ -r $ZABBIX_DATA ]]; then
-    rm $ZABBIX_DATA
-fi
+
 
 ###############################################################################################
 #####                                 INSTALL REQUIREMENTS                                #####
