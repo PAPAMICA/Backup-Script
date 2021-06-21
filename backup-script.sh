@@ -15,6 +15,7 @@ if [[ -r $FILE ]]; then
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Config file charged !"
 else
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't charge config file !"
+    exit
 fi
 
 ###############################################################################################
