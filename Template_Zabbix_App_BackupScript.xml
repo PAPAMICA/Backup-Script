@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.2</version>
-    <date>2021-06-20T22:31:01Z</date>
+    <date>2021-06-21T12:03:24Z</date>
     <groups>
         <group>
             <name>Templates/Applications</name>
@@ -31,6 +31,108 @@ https://github.com/PAPAMICA/Backup-Script</description>
                 </application>
             </applications>
             <items>
+                <item>
+                    <name>Latest backup date</name>
+                    <type>TRAP</type>
+                    <key>backup.date.last</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Databases backup count</name>
+                    <type>TRAP</type>
+                    <key>backup.db.count</key>
+                    <delay>0</delay>
+                    <description>Number of databases backuped</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Databases backup errors</name>
+                    <type>TRAP</type>
+                    <key>backup.db.errors</key>
+                    <delay>0</delay>
+                    <description>Number of error for databases backup</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Databases backup list</name>
+                    <type>TRAP</type>
+                    <key>backup.db.list</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <description>List of databases backuped</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Folders backup count</name>
+                    <type>TRAP</type>
+                    <key>backup.folder.count</key>
+                    <delay>0</delay>
+                    <description>Number of folders backuped</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Folders backup errors</name>
+                    <type>TRAP</type>
+                    <key>backup.folder.errors</key>
+                    <delay>0</delay>
+                    <description>Number of error for folders backup</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Folders backup list</name>
+                    <type>TRAP</type>
+                    <key>backup.folder.list</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <description>List of folders backuped</description>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Latest backup hour</name>
+                    <type>TRAP</type>
+                    <key>backup.hour.last</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <applications>
+                        <application>
+                            <name>BackupScript</name>
+                        </application>
+                    </applications>
+                </item>
                 <item>
                     <name>Backup folders total size</name>
                     <type>TRAP</type>
@@ -64,121 +166,6 @@ https://github.com/PAPAMICA/Backup-Script</description>
                     <delay>0</delay>
                     <units>s</units>
                     <description>Time in secondes for backup</description>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Latest backup date</name>
-                    <type>TRAP</type>
-                    <key>date.last.backup</key>
-                    <delay>0</delay>
-                    <trends>0</trends>
-                    <value_type>CHAR</value_type>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Databases backup count</name>
-                    <type>TRAP</type>
-                    <key>db.backup.count</key>
-                    <delay>0</delay>
-                    <description>Number of databases backuped</description>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Databases backup errors</name>
-                    <type>TRAP</type>
-                    <key>db.backup.errors</key>
-                    <delay>0</delay>
-                    <description>Number of error for databases backup</description>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Databases backup list</name>
-                    <type>TRAP</type>
-                    <key>db.backup.list</key>
-                    <delay>0</delay>
-                    <trends>0</trends>
-                    <value_type>CHAR</value_type>
-                    <description>List of databases backuped</description>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Folders backup count</name>
-                    <type>TRAP</type>
-                    <key>folder.backup.count</key>
-                    <delay>0</delay>
-                    <description>Number of folders backuped</description>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Folders backup errors</name>
-                    <type>TRAP</type>
-                    <key>folder.backup.errors</key>
-                    <delay>0</delay>
-                    <description>Number of error for folders backup</description>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Folders backup list</name>
-                    <type>TRAP</type>
-                    <key>folder.backup.list</key>
-                    <delay>0</delay>
-                    <trends>0</trends>
-                    <value_type>CHAR</value_type>
-                    <description>List of folders backuped</description>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Status of upload to kDrive</name>
-                    <type>TRAP</type>
-                    <key>send.kdrive.status</key>
-                    <delay>0</delay>
-                    <description>0 = Success
-1 = Error</description>
-                    <applications>
-                        <application>
-                            <name>BackupScript</name>
-                        </application>
-                    </applications>
-                </item>
-                <item>
-                    <name>Status of upload to Swiss-Backup</name>
-                    <type>TRAP</type>
-                    <key>send.swissbackup.status</key>
-                    <delay>0</delay>
-                    <description>0 = Success
-1 = Error</description>
                     <applications>
                         <application>
                             <name>BackupScript</name>
@@ -219,6 +206,19 @@ https://github.com/PAPAMICA/Backup-Script</description>
                             <key>backup.free[{#DESTINATION}]</key>
                             <delay>0</delay>
                             <units>o</units>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>BackupScript - {#DESTINATION}</name>
+                                </application_prototype>
+                            </application_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#DESTINATION} status</name>
+                            <type>TRAP</type>
+                            <key>backup.status[{#DESTINATION}]</key>
+                            <delay>0</delay>
+                            <description>0 = SUCCESS
+1 = FAILED</description>
                             <application_prototypes>
                                 <application_prototype>
                                     <name>BackupScript - {#DESTINATION}</name>
