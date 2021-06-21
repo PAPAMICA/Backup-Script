@@ -104,6 +104,13 @@ Run the script :
 ./backup-script.sh
 ```
 
+## Cronjog
+Start backup every day at 02h
+```sh
+crontab -e
+00 02 * * * /apps/Backup-Script/backup-script.sh >> /var/log/BackupScript.log
+```
+
 ## The available settings
 ### Dry run
 With  `--dry-run` you can preview what the script will do before you run it.
