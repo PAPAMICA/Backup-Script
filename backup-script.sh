@@ -37,10 +37,23 @@ fi
 if [[ $1 =~ "--list-backup" ]]; then
     LIST_BACKUP=$2
 fi
+
+###############################################################################################
+#####                                CHECK IF --zabbix-send                               #####
+###############################################################################################
+if [[ $1 =~ "--zabbix-send" ]]; then
+    ZABBIX_SEND="yes"
+fi
+
+
 FOLDER_TOTAL_SIZE=0
 FREE_SPACE_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
 FREE_SPACE=$(df $WORKFOLDER | awk 'FNR==2{print $4}')
 DELETE_AFTER=$(( $RETENTION_DAYS * 24 * 60 * 60 ))
+
+if [[ -r $ZABBIX_DATA ]]; then
+    rm $ZABBIX_DATA
+fi
 
 ###############################################################################################
 #####                                 INSTALL REQUIREMENTS                                #####
@@ -506,6 +519,22 @@ function Send-To-Zabbix {
     echo ""
 }
 
+function Send-Zabbix-Force {
+    zabbix_sender -z $ZABBIX_SRV -i $ZABBIX_DATA
+    status=$?
+    if test $status -eq 0; then
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
+    else
+        sleep 120
+        zabbix_sender -vv -z $ZABBIX_SRV -i $ZABBIX_DATA
+        status=$?
+        if test $status -eq 0; then
+            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
+        else
+            echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the send data to Zabbix."
+        fi
+    fi
+}
 ###############################################################################################
 #####                              SEND DISCORD NOTIFICATION                              #####
 ###############################################################################################
@@ -524,6 +553,11 @@ function Send-Discord-Notifications {
 ###############################################################################################
 if [ -n "$LIST_BACKUP" ]; then
     List-Backup
+    exit
+fi
+
+if [[ $ZABBIX_SEND == "yes" ]]; then
+    Send-Zabbix-Force
     exit
 fi
 
