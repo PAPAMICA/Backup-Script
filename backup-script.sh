@@ -433,7 +433,7 @@ function Send-to-config-rclone {
 #####                                     LIST BACKUP                                     #####
 ###############################################################################################
 function List-Backup {
-    if [ -n "$OPTION_LIST_BACKUP" ]; then
+    if [ -n "$LIST_BACKUP" ]; then
         rclone lsf $LIST_BACKUP:$SERVER_NAME
     else
         if [[ $KDRIVE == "yes" ]]; then
