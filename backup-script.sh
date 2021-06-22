@@ -434,6 +434,8 @@ function Send-to-config-rclone {
 ###############################################################################################
 function List-Backup {
     if [ -n "$LIST_BACKUP" ]; then
+        echo ""
+        echo "Backups availables on $LIST_BACKUP :"
         rclone lsf $LIST_BACKUP:$SERVER_NAME
     else
         if [[ $KDRIVE == "yes" ]]; then
