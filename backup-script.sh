@@ -57,6 +57,7 @@ FOLDER_TOTAL_SIZE=0
 FREE_SPACE_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
 FREE_SPACE=$(df $WORKFOLDER | awk 'FNR==2{print $4}')
 DELETE_AFTER=$(( $RETENTION_DAYS * 24 * 60 * 60 ))
+BACKUP_ERROS=0
 
 
 
@@ -194,9 +195,7 @@ function Backup-Folders {
                 else
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup of $FOLDER."
                     ((FOLDERS_BACKUP_ERRORS++))
-                    if [[ $ZABBIX == "yes" ]]; then
-                        Send-Zabbix-Data "backup.status" "1"
-                    fi
+                    ((BACKUP_ERROS++))
                 fi
                 FOLDER_SIZE_AFTER_H=$(du -bhs $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
                 FOLDER_SIZE_AFTER=$(du -bs $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
@@ -260,9 +259,7 @@ function Backup-Database {
                 else
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
                     ((DB_BACKUP_ERRORS++))
-                    if [[ $ZABBIX == "yes" ]]; then
-                        Send-Zabbix-Data "backup.status" "1"
-                    fi
+                    ((BACKUP_ERROS++))
                 fi
                 DB_SIZE_AFTER_H=$(du -bhs $SQLFILE | awk '{print $1}')
                 DB_SIZE_AFTER=$(du -bs $SQLFILE | awk '{print $1}')
@@ -313,15 +310,14 @@ function Backup-Database {
         else
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't get credentials of $CONTAINER_NAME."
             ((DB_BACKUP_ERRORS++))
-            if [[ $ZABBIX == "yes" ]]; then
-                Send-Zabbix-Data "backup.status" "1"
-            fi
+            ((BACKUP_ERROS++))
         fi
 
         SIZE=5000
         if [[ DRY_RUN == "no" ]] && [ "$(du -bsb $SQLFILE | awk '{ print $1 }')" -le $SIZE ]; then
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ⚠️   WARNING : Backup file of $CONTAINER_NAME is smaller than 1Mo."
             ((DB_BACKUP_ERRORS++))
+            ((BACKUP_ERROS++))
         fi
             
         DB_LIST=$(echo "$DB_LIST $CONTAINER_NAME")
@@ -379,9 +375,7 @@ function Send-to-SwissBackup {
     else
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 SwissBackup")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to SwissBackup."
-        if [[ $ZABBIX == "yes" ]]; then
-            Send-Zabbix-Data "backup.status" "1"
-        fi
+        ((BACKUP_ERROS++))
     fi
 
     echo ""
@@ -403,9 +397,7 @@ function Send-to-kDrive {
     else
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 kDrive")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to kDrive."
-        if [[ $ZABBIX == "yes" ]]; then
-            Send-Zabbix-Data "backup.status" "1"
-        fi
+        ((BACKUP_ERROS++))
     fi
     echo ""
     printf '=%.0s' {1..100}
@@ -428,9 +420,7 @@ function Send-to-config-rclone {
         else
             BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 $CONFIG")
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to $CONFIG."
-            if [[ $ZABBIX == "yes" ]]; then
-                Send-Zabbix-Data "backup.status" "1"
-            fi
+            ((BACKUP_ERROS++))
         fi
         echo ""
         printf '=%.0s' {1..100}
@@ -516,7 +506,7 @@ function Send-To-Zabbix {
             echo "\"$ZABBIX_HOST"\" backup.used[$DESTINATION] $ZB_USED >> $ZABBIX_DATA
             echo "\"$ZABBIX_HOST"\" backup.used.pourcent[$DESTINATION] $ZB_POURCENT_USED >> $ZABBIX_DATA
         done
-        
+        echo "\"$ZABBIX_HOST"\" backup.errors $BACKUP_ERROS >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.status 0 >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.date.last $DATE >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.hour.last $HOUR >> $ZABBIX_DATA
