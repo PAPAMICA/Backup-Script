@@ -38,6 +38,7 @@ fi
 #####                                CHECK IF --list-backup                               #####
 ###############################################################################################
 if [[ $1 =~ "--list-backup" ]]; then
+    OPTION_LIST_BACKUP=1
     LIST_BACKUP=$2
 fi
 
@@ -432,7 +433,27 @@ function Send-to-config-rclone {
 #####                                     LIST BACKUP                                     #####
 ###############################################################################################
 function List-Backup {
-    rclone lsf $LIST_BACKUP:$SERVER_NAME
+    if [ -n "$OPTION_LIST_BACKUP" ]; then
+        rclone lsf $LIST_BACKUP:$SERVER_NAME
+    else
+        if [[ $KDRIVE == "yes" ]]; then
+            LIST_BACKUP=$(echo "$LIST_BACKUP kDrive")
+        fi
+        if [[ $SWISS_BACKUP == "yes" ]]; then
+            LIST_BACKUP=$(echo "$LIST_BACKUP SwissBackup")
+        fi
+
+        if [ -n "$RCLONE_CONFIGS" ]; then
+            LIST_BACKUP=$(echo "$LIST_BACKUP $RCLONE_CONFIGS")
+        fi
+        for BACKUP in $LIST_BACKUP;do
+            echo ""
+            echo "Backups availables on $BACKUP :"
+            rclone lsf $BACKUP:$SERVER_NAME
+        done
+    fi
+
+    
 }
 
 ###############################################################################################
@@ -589,7 +610,7 @@ function Send-Discord-Notifications {
 ###############################################################################################
 #####                                      EXECUTION                                      #####
 ###############################################################################################
-if [ -n "$LIST_BACKUP" ]; then
+if [ -n "$OPTION_LIST_BACKUP" ]; then
     List-Backup
     exit
 fi
