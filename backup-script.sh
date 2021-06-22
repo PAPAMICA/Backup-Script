@@ -448,7 +448,7 @@ function List-Backup {
         fi
         for CONFIG in $LIST_BACKUP; do
             echo ""
-            echo "Backups availables on $BACKUP :"
+            echo "Backups availables on $CONFIG :"
             rclone lsf $CONFIG:$SERVER_NAME
         done
     fi
