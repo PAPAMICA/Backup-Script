@@ -446,10 +446,10 @@ function List-Backup {
         if [ -n "$RCLONE_CONFIGS" ]; then
             LIST_BACKUP=$(echo "$LIST_BACKUP $RCLONE_CONFIGS")
         fi
-        for BACKUP in $LIST_BACKUP;do
+        for CONFIG in $LIST_BACKUP; do
             echo ""
             echo "Backups availables on $BACKUP :"
-            rclone lsf $BACKUP:$SERVER_NAME
+            rclone lsf $CONFIG:$SERVER_NAME
         done
     fi
 
