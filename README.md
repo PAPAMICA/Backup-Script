@@ -15,7 +15,19 @@ apt install -y mariadb-client pv curl zabbix-sender jq bc
 curl https://rclone.org/install.sh | sudo bash
 ```
 # Configuration
-All the configuration parameters must be filled in the file `backup-script.conf` :
+
+You must modify 2 lines in the file `backup-script.sh` :
+Line 12: configure the path of your configuration file
+```sh
+FILE_CONF="/apps/Backup-Script/backup-script.conf" # Config file
+```
+
+Line 19: If you are not using Zabbix, comment it out, otherwise enter the information `<ZABBIX_SERVER>` and `<HOST_ZABBIX>` without the `<>`
+```sh
+zabbix_sender -z "<ZABBIX_SERVER>" -s "<HOST_ZABBIX>" -k "backup.status" -o "1"
+```
+
+All others parameters must be filled in the file `backup-script.conf` :
 
 ## General
 | VARIABLE | DESCRIPTION |
