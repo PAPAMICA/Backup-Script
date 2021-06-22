@@ -9,12 +9,15 @@
 ###############################################################################################
 #####                                   GET CONFIG FILE                                   #####
 ###############################################################################################
-FILE_CONF="/apps/Backup-Script/backup-script.conf"
+FILE_CONF="/apps/Backup-Script/backup-script.conf" # Config file
 if [[ -r $FILE_CONF ]]; then
     . $FILE_CONF
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Config file charged !"
 else
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't charge config file !"
+    # Comment this line if you don't use Zabbix
+    zabbix_sender -z "<ZABBIX_SERVER>" -s "<HOST_ZABBIX>" -k "backup.status" -o "1"
+    
     exit
 fi
 
@@ -90,6 +93,10 @@ function Create-Rclone-Config-kDrive {
                 echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   kDrive config created for rclone."
             else
                 echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : kDrive config didn't created, please check that !"
+                
+                if [[ $ZABBIX == "yes" ]]; then
+                    Send-Zabbix-Data "backup.status" "1"
+                fi
                 exit
             fi
         fi
@@ -117,6 +124,9 @@ function Create-Rclone-Config-SwissBackup {
                 echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   SwissBackup config created for rclone."
             else
                 echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : SwissBackup config didn't created, please check that !"
+                if [[ $ZABBIX == "yes" ]]; then
+                    Send-Zabbix-Data "backup.status" "1"
+                fi
                 exit
             fi
         fi
@@ -184,6 +194,9 @@ function Backup-Folders {
                 else
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup of $FOLDER."
                     ((FOLDERS_BACKUP_ERRORS++))
+                    if [[ $ZABBIX == "yes" ]]; then
+                        Send-Zabbix-Data "backup.status" "1"
+                    fi
                 fi
                 FOLDER_SIZE_AFTER_H=$(du -bhs $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
                 FOLDER_SIZE_AFTER=$(du -bs $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
@@ -247,6 +260,9 @@ function Backup-Database {
                 else
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
                     ((DB_BACKUP_ERRORS++))
+                    if [[ $ZABBIX == "yes" ]]; then
+                        Send-Zabbix-Data "backup.status" "1"
+                    fi
                 fi
                 DB_SIZE_AFTER_H=$(du -bhs $SQLFILE | awk '{print $1}')
                 DB_SIZE_AFTER=$(du -bs $SQLFILE | awk '{print $1}')
@@ -283,6 +299,9 @@ function Backup-Database {
                 else
                     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the backup database of $CONTAINER_NAME."
                     ((DB_BACKUP_ERRORS++))
+                    if [[ $ZABBIX == "yes" ]]; then
+                        Send-Zabbix-Data "backup.status" "1"
+                    fi
                 fi
                 DB_SIZE_AFTER_H=$(du -bhs $SQLFILE | awk '{print $1}')
                 DB_SIZE_AFTER=$(du -bs $SQLFILE | awk '{print $1}')
@@ -294,6 +313,9 @@ function Backup-Database {
         else
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't get credentials of $CONTAINER_NAME."
             ((DB_BACKUP_ERRORS++))
+            if [[ $ZABBIX == "yes" ]]; then
+                Send-Zabbix-Data "backup.status" "1"
+            fi
         fi
 
         SIZE=5000
@@ -357,6 +379,9 @@ function Send-to-SwissBackup {
     else
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 SwissBackup")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to SwissBackup."
+        if [[ $ZABBIX == "yes" ]]; then
+            Send-Zabbix-Data "backup.status" "1"
+        fi
     fi
 
     echo ""
@@ -378,6 +403,9 @@ function Send-to-kDrive {
     else
         BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 kDrive")
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to kDrive."
+        if [[ $ZABBIX == "yes" ]]; then
+            Send-Zabbix-Data "backup.status" "1"
+        fi
     fi
     echo ""
     printf '=%.0s' {1..100}
@@ -400,6 +428,9 @@ function Send-to-config-rclone {
         else
             BACKUP_STATUS=$(echo "$BACKUP_STATUS 🔴 $CONFIG")
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the upload to $CONFIG."
+            if [[ $ZABBIX == "yes" ]]; then
+                Send-Zabbix-Data "backup.status" "1"
+            fi
         fi
         echo ""
         printf '=%.0s' {1..100}
@@ -485,7 +516,8 @@ function Send-To-Zabbix {
             echo "\"$ZABBIX_HOST"\" backup.used[$DESTINATION] $ZB_USED >> $ZABBIX_DATA
             echo "\"$ZABBIX_HOST"\" backup.used.pourcent[$DESTINATION] $ZB_POURCENT_USED >> $ZABBIX_DATA
         done
-
+        
+        echo "\"$ZABBIX_HOST"\" backup.status 0 >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.date.last $DATE >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.hour.last $HOUR >> $ZABBIX_DATA
         echo "\"$ZABBIX_HOST"\" backup.size $FOLDER_TOTAL_SIZE >> $ZABBIX_DATA
@@ -539,6 +571,16 @@ function Send-Zabbix-Force {
         else
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the send data to Zabbix."
         fi
+    fi
+}
+
+function Send-Zabbix-Data {
+    zabbix_sender -z "$ZABBIX_SRV" -s "$ZABBIX_HOST" -k "$1" -o "$2"
+    status=$?
+    if test $status -eq 0; then
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
+    else
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : A problem was encountered during the send data to Zabbix."
     fi
 }
 ###############################################################################################
