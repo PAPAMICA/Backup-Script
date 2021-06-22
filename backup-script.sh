@@ -9,7 +9,7 @@
 ###############################################################################################
 #####                                   GET CONFIG FILE                                   #####
 ###############################################################################################
-FILE_CONF="backup-script.conf"
+FILE_CONF="/apps/Backup-Script/backup-script.conf"
 if [[ -r $FILE_CONF ]]; then
     . $FILE_CONF
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Config file charged !"
