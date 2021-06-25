@@ -542,7 +542,9 @@ function Send-To-Zabbix {
         if [[ $DOCKER == "yes" ]]; then
             echo "\"$ZABBIX_HOST"\" backup.db.errors $DB_BACKUP_ERRORS >> $ZABBIX_DATA
             echo "\"$ZABBIX_HOST"\" backup.db.count $DB_COUNT >> $ZABBIX_DATA
-            echo "\"$ZABBIX_HOST"\" backup.db.list $DB_LIST >> $ZABBIX_DATA
+            if test $DB_COUNT -gt 0; then
+                echo "\"$ZABBIX_HOST"\" backup.db.list $DB_LIST >> $ZABBIX_DATA
+            fi
         fi
 
         zabbix_sender -z "$ZABBIX_SRV" -s "$ZABBIX_HOST" -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
