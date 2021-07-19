@@ -523,7 +523,7 @@ function Send-To-Zabbix {
             else
                 echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] 1 >> $ZABBIX_DATA
             fi
-            if [ -n "$ZB_TOTAL" ]
+            if [ -n "$ZB_TOTAL" ]; then
                 echo "\"$ZABBIX_HOST"\" backup.total[$DESTINATION] $ZB_TOTAL >> $ZABBIX_DATA
                 echo "\"$ZABBIX_HOST"\" backup.free[$DESTINATION] $ZB_FREE >> $ZABBIX_DATA
                 echo "\"$ZABBIX_HOST"\" backup.used[$DESTINATION] $ZB_USED >> $ZABBIX_DATA
