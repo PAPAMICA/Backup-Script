@@ -8,16 +8,24 @@
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
+  "fiscalYearStartMonth": 0,
   "gnetId": null,
   "graphTooltip": 0,
   "id": 33,
-  "iteration": 1624265125325,
+  "iteration": 1635243143414,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "datasource": null,
@@ -28,11 +36,12 @@
           },
           "mappings": [
             {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
+              "options": {
+                "": {
+                  "text": ""
+                }
+              },
+              "type": "value"
             }
           ],
           "thresholds": {
@@ -43,12 +52,13 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "dateTimeFromNow"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 4,
         "x": 0,
         "y": 0
@@ -63,13 +73,15 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^Latest backup date$/",
+          "fields": "/^Time$/",
           "values": false
         },
-        "text": {},
+        "text": {
+          "valueSize": 35
+        },
         "textMode": "value"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -79,11 +91,12 @@
           "group": {
             "filter": "/.*/"
           },
+          "hide": false,
           "host": {
             "filter": "$SERVER"
           },
           "item": {
-            "filter": "Latest backup date"
+            "filter": "Backup Status"
           },
           "options": {
             "disableDataAlignment": false,
@@ -94,7 +107,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 2,
+          "queryType": 0,
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -110,9 +123,11 @@
             "acknowledged": 2,
             "count": true,
             "minSeverity": 3
-          }
+          },
+          "useCaptureGroups": false
         }
       ],
+      "title": "Latest backup",
       "type": "stat"
     },
     {
@@ -124,28 +139,27 @@
           },
           "mappings": [
             {
-              "from": "",
-              "id": 1,
-              "text": "OK",
-              "to": "",
-              "type": 1,
-              "value": "0"
-            },
-            {
-              "from": "",
-              "id": 2,
-              "text": "ERROR",
-              "to": "",
-              "type": 1,
-              "value": "1"
+              "options": {
+                "0": {
+                  "text": "OK"
+                },
+                "1": {
+                  "text": "ERROR"
+                }
+              },
+              "type": "value"
             }
           ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -178,7 +192,7 @@
         "text": {},
         "textMode": "name"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -187,20 +201,21 @@
           "functions": [
             {
               "def": {
-                "name": "setAliasByRegex",
                 "category": "Alias",
+                "defaultParams": [],
+                "name": "setAliasByRegex",
                 "params": [
                   {
                     "name": "aliasByRegex",
                     "type": "string"
                   }
-                ],
-                "defaultParams": []
+                ]
               },
               "params": [
-                "^([\\w\\-]+)"
+                "(?<=\\:\\s)([\\w\\-]+)"
               ],
-              "text": "setAliasByRegex(^([\\w\\-]+))"
+              "text": "setAliasByRegex((?<=\\:\\s)([\\w\\-]+))",
+              "$$hashKey": "object:32"
             }
           ],
           "group": {
@@ -212,6 +227,9 @@
           "item": {
             "filter": "/status*/"
           },
+          "itemTag": {
+            "filter": "Application: /BackupScript */"
+          },
           "options": {
             "disableDataAlignment": false,
             "showDisabledItems": false,
@@ -221,7 +239,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 0,
+          "queryType": "0",
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -252,15 +270,7 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -295,7 +305,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -349,15 +359,7 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -396,7 +398,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -450,15 +452,7 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -494,7 +488,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -503,13 +497,15 @@
           "functions": [
             {
               "def": {
-                "category": "Aggregate",
-                "defaultParams": [],
                 "name": "sumSeries",
-                "params": []
+                "category": "Aggregate",
+                "params": [],
+                "defaultParams": []
               },
               "params": [],
-              "text": "sumSeries()"
+              "text": "sumSeries()",
+              "added": false,
+              "$$hashKey": "object:220"
             }
           ],
           "group": {
@@ -521,6 +517,9 @@
           "item": {
             "filter": "/.*/"
           },
+          "itemTag": {
+            "filter": "Application: BackupScript - Folders"
+          },
           "options": {
             "disableDataAlignment": false,
             "showDisabledItems": false,
@@ -530,7 +529,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 0,
+          "queryType": "0",
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -559,15 +558,7 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -604,7 +595,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -658,15 +649,7 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -675,33 +658,34 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 2,
-        "w": 4,
+        "h": 3,
+        "w": 2,
         "x": 0,
-        "y": 2
+        "y": 3
       },
-      "id": 30,
+      "id": 11,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^Latest backup hour$/",
+          "fields": "",
           "values": false
         },
         "text": {},
         "textMode": "value"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -715,7 +699,10 @@
             "filter": "$SERVER"
           },
           "item": {
-            "filter": "Latest backup hour"
+            "filter": "Backup time"
+          },
+          "itemTag": {
+            "filter": "Application: BackupScript"
           },
           "options": {
             "disableDataAlignment": false,
@@ -726,7 +713,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 2,
+          "queryType": "0",
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -749,6 +736,7 @@
     },
     {
       "datasource": null,
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -756,13 +744,132 @@
           },
           "mappings": [
             {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
+              "options": {
+                "0": {
+                  "text": "OK"
+                },
+                "1": {
+                  "text": "ERROR"
+                }
+              },
+              "type": "value"
             }
           ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 2,
+        "x": 2,
+        "y": 3
+      },
+      "id": 34,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "value"
+      },
+      "pluginVersion": "8.2.0",
+      "targets": [
+        {
+          "application": {
+            "filter": "BackupScript"
+          },
+          "functions": [
+            {
+              "def": {
+                "category": "Aggregate",
+                "defaultParams": [],
+                "name": "sumSeries",
+                "params": []
+              },
+              "params": [],
+              "text": "sumSeries()",
+              "$$hashKey": "object:381"
+            }
+          ],
+          "group": {
+            "filter": "/.*/"
+          },
+          "hide": false,
+          "host": {
+            "filter": "$SERVER"
+          },
+          "item": {
+            "filter": "/Backup Status|Backup Errors/"
+          },
+          "itemTag": {
+            "filter": "Application: BackupScript"
+          },
+          "options": {
+            "disableDataAlignment": false,
+            "showDisabledItems": false,
+            "skipEmptyValues": false,
+            "useZabbixValueMapping": false
+          },
+          "proxy": {
+            "filter": ""
+          },
+          "queryType": "0",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "table": {
+            "skipEmptyValues": false
+          },
+          "tags": {
+            "filter": ""
+          },
+          "trigger": {
+            "filter": ""
+          },
+          "triggers": {
+            "acknowledged": 2,
+            "count": true,
+            "minSeverity": 3
+          }
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Backups status",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -797,7 +904,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -851,15 +958,7 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -898,7 +997,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -952,15 +1051,7 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -996,7 +1087,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -1004,6 +1095,7 @@
           },
           "functions": [
             {
+              "$$hashKey": "object:282",
               "def": {
                 "category": "Aggregate",
                 "defaultParams": [],
@@ -1061,15 +1153,7 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1106,7 +1190,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -1154,102 +1238,6 @@
       "type": "stat"
     },
     {
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "from": "",
-              "id": 1,
-              "text": "",
-              "to": "",
-              "type": 1
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(255, 255, 255)",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 4,
-        "x": 0,
-        "y": 4
-      },
-      "id": 11,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/^Backup time$/",
-          "values": false
-        },
-        "text": {},
-        "textMode": "value"
-      },
-      "pluginVersion": "7.5.5",
-      "targets": [
-        {
-          "application": {
-            "filter": "BackupScript"
-          },
-          "functions": [],
-          "group": {
-            "filter": "/.*/"
-          },
-          "host": {
-            "filter": "$SERVER"
-          },
-          "item": {
-            "filter": "Backup time"
-          },
-          "options": {
-            "disableDataAlignment": false,
-            "showDisabledItems": false,
-            "skipEmptyValues": false,
-            "useZabbixValueMapping": false
-          },
-          "proxy": {
-            "filter": ""
-          },
-          "queryType": 0,
-          "refId": "A",
-          "resultFormat": "time_series",
-          "table": {
-            "skipEmptyValues": false
-          },
-          "tags": {
-            "filter": ""
-          },
-          "trigger": {
-            "filter": ""
-          },
-          "triggers": {
-            "acknowledged": 2,
-            "count": true,
-            "minSeverity": 3
-          }
-        }
-      ],
-      "type": "stat"
-    },
-    {
       "cacheTimeout": null,
       "datasource": null,
       "fieldConfig": {
@@ -1257,21 +1245,15 @@
           "color": {
             "mode": "palette-classic"
           },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
           "decimals": 0,
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
           "unit": "decbytes"
         },
         "overrides": []
@@ -1304,7 +1286,10 @@
           "fields": "",
           "values": false
         },
-        "text": {}
+        "text": {},
+        "tooltip": {
+          "mode": "single"
+        }
       },
       "pluginVersion": "7.5.5",
       "targets": [
@@ -1312,7 +1297,27 @@
           "application": {
             "filter": "BackupScript - Folders"
           },
-          "functions": [],
+          "functions": [
+            {
+              "def": {
+                "name": "setAliasByRegex",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "aliasByRegex",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "(?<=\\:\\s)([\\w\\-]+)"
+              ],
+              "text": "setAliasByRegex((?<=\\:\\s)([\\w\\-]+))",
+              "added": false,
+              "$$hashKey": "object:272"
+            }
+          ],
           "group": {
             "filter": "/.*/"
           },
@@ -1321,6 +1326,9 @@
           },
           "item": {
             "filter": "/.*/"
+          },
+          "itemTag": {
+            "filter": "Application: BackupScript - Folders"
           },
           "options": {
             "disableDataAlignment": false,
@@ -1331,7 +1339,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 0,
+          "queryType": "0",
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -1353,7 +1361,27 @@
           "application": {
             "filter": "BackupScript - Databases"
           },
-          "functions": [],
+          "functions": [
+            {
+              "def": {
+                "name": "setAliasByRegex",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "aliasByRegex",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "(?<=\\:\\s)([\\w\\-]+)"
+              ],
+              "text": "setAliasByRegex((?<=\\:\\s)([\\w\\-]+))",
+              "added": false,
+              "$$hashKey": "object:274"
+            }
+          ],
           "group": {
             "filter": "/.*/"
           },
@@ -1364,6 +1392,9 @@
           "item": {
             "filter": "/.*/"
           },
+          "itemTag": {
+            "filter": "Application: BackupScript - Databases"
+          },
           "options": {
             "disableDataAlignment": false,
             "showDisabledItems": false,
@@ -1373,7 +1404,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 0,
+          "queryType": "0",
           "refId": "B",
           "resultFormat": "time_series",
           "table": {
@@ -1403,21 +1434,15 @@
           "color": {
             "mode": "palette-classic"
           },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
           "decimals": 0,
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
           "unit": "decbytes"
         },
         "overrides": []
@@ -1450,7 +1475,10 @@
           "fields": "",
           "values": false
         },
-        "text": {}
+        "text": {},
+        "tooltip": {
+          "mode": "single"
+        }
       },
       "pluginVersion": "7.5.5",
       "targets": [
@@ -1458,7 +1486,26 @@
           "application": {
             "filter": "BackupScript - Folders"
           },
-          "functions": [],
+          "functions": [
+            {
+              "def": {
+                "name": "setAliasByRegex",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "aliasByRegex",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "(?<=\\:\\s)([\\w\\-]+)"
+              ],
+              "text": "setAliasByRegex((?<=\\:\\s)([\\w\\-]+))",
+              "$$hashKey": "object:327"
+            }
+          ],
           "group": {
             "filter": "/.*/"
           },
@@ -1467,6 +1514,9 @@
           },
           "item": {
             "filter": "/.*/"
+          },
+          "itemTag": {
+            "filter": "Application: BackupScript - Folders"
           },
           "options": {
             "disableDataAlignment": false,
@@ -1477,7 +1527,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 0,
+          "queryType": "0",
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -1507,21 +1557,15 @@
           "color": {
             "mode": "palette-classic"
           },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
           "decimals": 0,
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
           "unit": "decbytes"
         },
         "overrides": []
@@ -1554,7 +1598,10 @@
           "fields": "",
           "values": false
         },
-        "text": {}
+        "text": {},
+        "tooltip": {
+          "mode": "single"
+        }
       },
       "pluginVersion": "7.5.5",
       "targets": [
@@ -1562,7 +1609,27 @@
           "application": {
             "filter": "BackupScript - Databases"
           },
-          "functions": [],
+          "functions": [
+            {
+              "def": {
+                "name": "setAliasByRegex",
+                "category": "Alias",
+                "params": [
+                  {
+                    "name": "aliasByRegex",
+                    "type": "string"
+                  }
+                ],
+                "defaultParams": []
+              },
+              "params": [
+                "(?<=\\:\\s)([\\w\\-]+)"
+              ],
+              "text": "setAliasByRegex((?<=\\:\\s)([\\w\\-]+))",
+              "added": false,
+              "$$hashKey": "object:355"
+            }
+          ],
           "group": {
             "filter": "/.*/"
           },
@@ -1571,6 +1638,9 @@
           },
           "item": {
             "filter": "/.*/"
+          },
+          "itemTag": {
+            "filter": "Application: BackupScript - Databases"
           },
           "options": {
             "disableDataAlignment": false,
@@ -1581,7 +1651,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 0,
+          "queryType": "0",
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -1620,7 +1690,8 @@
             "hideFrom": {
               "graph": false,
               "legend": false,
-              "tooltip": false
+              "tooltip": false,
+              "viz": false
             },
             "lineInterpolation": "smooth",
             "lineWidth": 10,
@@ -1629,7 +1700,14 @@
               "type": "linear"
             },
             "showPoints": "never",
-            "spanNulls": true
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -1659,7 +1737,7 @@
           "displayMode": "hidden",
           "placement": "bottom"
         },
-        "tooltipOptions": {
+        "tooltip": {
           "mode": "single"
         }
       },
@@ -1729,7 +1807,8 @@
             "hideFrom": {
               "graph": false,
               "legend": false,
-              "tooltip": false
+              "tooltip": false,
+              "viz": false
             },
             "lineInterpolation": "smooth",
             "lineWidth": 4,
@@ -1738,7 +1817,14 @@
               "type": "linear"
             },
             "showPoints": "always",
-            "spanNulls": true
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -1768,7 +1854,7 @@
           "displayMode": "hidden",
           "placement": "bottom"
         },
-        "tooltipOptions": {
+        "tooltip": {
           "mode": "single"
         }
       },
@@ -1829,6 +1915,8 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1841,7 +1929,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -1865,7 +1954,7 @@
         "showUnfilled": true,
         "text": {}
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -1874,20 +1963,21 @@
           "functions": [
             {
               "def": {
-                "name": "setAliasByRegex",
                 "category": "Alias",
+                "defaultParams": [],
+                "name": "setAliasByRegex",
                 "params": [
                   {
                     "name": "aliasByRegex",
                     "type": "string"
                   }
-                ],
-                "defaultParams": []
+                ]
               },
               "params": [
-                "^([\\w\\-]+)"
+                "(?<=\\:\\s)([\\w\\-]+)"
               ],
-              "text": "setAliasByRegex(^([\\w\\-]+))"
+              "text": "setAliasByRegex((?<=\\:\\s)([\\w\\-]+))",
+              "$$hashKey": "object:167"
             }
           ],
           "group": {
@@ -1899,6 +1989,9 @@
           "item": {
             "filter": "/pourcent */"
           },
+          "itemTag": {
+            "filter": "Application: /BackupScript */"
+          },
           "options": {
             "disableDataAlignment": false,
             "showDisabledItems": false,
@@ -1908,7 +2001,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 0,
+          "queryType": "0",
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -1977,7 +2070,7 @@
         "text": {},
         "textMode": "value_and_name"
       },
-      "pluginVersion": "7.5.5",
+      "pluginVersion": "8.2.0",
       "targets": [
         {
           "application": {
@@ -1986,20 +2079,21 @@
           "functions": [
             {
               "def": {
-                "name": "setAliasByRegex",
                 "category": "Alias",
+                "defaultParams": [],
+                "name": "setAliasByRegex",
                 "params": [
                   {
                     "name": "aliasByRegex",
                     "type": "string"
                   }
-                ],
-                "defaultParams": []
+                ]
               },
               "params": [
-                "^([\\w\\-]+)"
+                "(?<=\\:\\s)([\\w\\-]+)"
               ],
-              "text": "setAliasByRegex(^([\\w\\-]+))"
+              "text": "setAliasByRegex((?<=\\:\\s)([\\w\\-]+))",
+              "$$hashKey": "object:59"
             }
           ],
           "group": {
@@ -2011,6 +2105,9 @@
           "item": {
             "filter": "/free */"
           },
+          "itemTag": {
+            "filter": "Application: /BackupScript */"
+          },
           "options": {
             "disableDataAlignment": false,
             "showDisabledItems": false,
@@ -2020,7 +2117,7 @@
           "proxy": {
             "filter": ""
           },
-          "queryType": 0,
+          "queryType": "0",
           "refId": "A",
           "resultFormat": "time_series",
           "table": {
@@ -2046,7 +2143,7 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 27,
+  "schemaVersion": 31,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -2055,8 +2152,8 @@
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "VPS - NURION",
-          "value": "VPS - NURION"
+          "text": "VPS - ORION",
+          "value": "VPS - ORION"
         },
         "datasource": null,
         "definition": "Zabbix - host",
@@ -2067,18 +2164,7 @@
         "label": null,
         "multi": false,
         "name": "SERVER",
-        "options": [
-          {
-            "selected": true,
-            "text": "VPS - NURION",
-            "value": "VPS - NURION"
-          },
-          {
-            "selected": false,
-            "text": "VPS - ORION",
-            "value": "VPS - ORION"
-          }
-        ],
+        "options": [],
         "query": {
           "application": "/BackupScript*/",
           "group": "VPS",
@@ -2086,12 +2172,11 @@
           "item": "/status*/",
           "queryType": "host"
         },
-        "refresh": 0,
+        "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -2099,12 +2184,12 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Backups",
   "uid": "XAC-byRnz",
-  "version": 23
+  "version": 34
 }
