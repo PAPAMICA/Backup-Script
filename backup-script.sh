@@ -12,6 +12,7 @@
 FILE_CONF="/apps/Backup-Script/backup-script.conf" # Config file
 if [[ -r $FILE_CONF ]]; then
     . $FILE_CONF
+    /bin/mkdir -p $WORKFOLDER
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Config file charged !"
 else
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't charge config file !"
@@ -68,6 +69,10 @@ BACKUP_ERROS=0
 function Install-Requirements {
     apt install -y mariadb-client pv curl zabbix-sender jq bc
     curl https://rclone.org/install.sh | sudo bash
+    if [[ $NOTIFICATION == "yes" ]]; then
+      apt install -y python3-pip
+      pip3 install apprise
+    fi
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅  All requirements is installed."
     echo ""
     printf '=%.0s' {1..100}
@@ -603,12 +608,11 @@ function Send-Zabbix-Data {
 #####                              SEND DISCORD NOTIFICATION                              #####
 ###############################################################################################
 function Send-Notifications {
-    cat << _EOF | apprise -vv -n success -t "Backup of $DATE" --input-format=markdown "$NOTIFIER"
-
+    echo " 
     Folders and databases have been successfully backed up !
 
     ## Folders ($FOLDER_TOTAL_SIZE_H) :
-    $$FOLDER_LIST
+    $FOLDER_LIST
 
     ## Databases ($DB_TOTAL_SIZE_H) :
     $DB_LIST
@@ -616,8 +620,9 @@ function Send-Notifications {
     ## Time :
     $RUN_TIME_H
 
-    $BACKUP_STATUS
-    _EOF
+    ## Backup destinations :
+    ### $BACKUP_STATUS
+    " | apprise -vv -n success -t "[$SERVER_NAME] - Backup of $DATE" --input-format=markdown "$NOTIFIER"
 
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Notification are sended"
     echo ""

@@ -14,6 +14,11 @@ Install the necessary packages with the following commands:
 apt install -y mariadb-client pv curl zabbix-sender jq bc
 curl https://rclone.org/install.sh | sudo bash
 ```
+If you use Notifications : 
+```sh
+apt install -y python3-pip
+pip install apprise
+```
 # Configuration
 
 You must modify 2 lines in the file `backup-script.sh` :
