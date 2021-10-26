@@ -94,10 +94,10 @@ Rclone : https://rclone.org
 Zabbix : https://www.zabbix.com
 Tutoriels : https://wiki-tech.io/fr/Supervision
 
-## Discord
+## Notifications
 | VARIABLE | DESCRIPTION |
 |--|--|
-| DISCORD_WEBHOOK | The Webhook of your Discord bot |
+| NOTIFIER | Check https://github.com/caronc/apprise#supported-notifications |
 
 **Liens utiles :**
 Discord : https://discord.com
