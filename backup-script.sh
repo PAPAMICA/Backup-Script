@@ -602,9 +602,24 @@ function Send-Zabbix-Data {
 ###############################################################################################
 #####                              SEND DISCORD NOTIFICATION                              #####
 ###############################################################################################
-function Send-Discord-Notifications {
-    ./discord.sh --webhook-url=$DISCORD_WEBHOOK --username "[$SERVER_NAME]" --text "Backup of $DATE" --title "Folders and databases have been successfully backed up !" --description "**Folders ($FOLDER_TOTAL_SIZE_H) :\n** $FOLDER_LIST\n\n**Databases ($DB_TOTAL_SIZE_H) :\n** $DB_LIST\n\n**Time :**\n $RUN_TIME_H" --color 0x4BF646 --footer "$BACKUP_STATUS" --footer-icon "https://send.papamica.fr/f.php?h=0QpaiREO&p=1"
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Notification are sended to Discord"
+function Send-Notifications {
+    cat << _EOF | apprise -vv -n success -t "Backup of $DATE" --input-format=markdown "$NOTIFIER"
+
+    Folders and databases have been successfully backed up !
+
+    ## Folders ($FOLDER_TOTAL_SIZE_H) :
+    $$FOLDER_LIST
+
+    ## Databases ($DB_TOTAL_SIZE_H) :
+    $DB_LIST
+
+    ## Time :
+    $RUN_TIME_H
+
+    $BACKUP_STATUS
+    _EOF
+
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Notification are sended"
     echo ""
     printf '=%.0s' {1..100}
     echo ""
@@ -656,8 +671,8 @@ fi
 END_TIME=$(date +%s)
 RUN_TIME=$((END_TIME-START_TIME))
 RUN_TIME_H=$(eval "echo $(date -ud "@$RUN_TIME" +'$((%s/3600/24)) days %H hours %M minutes %S seconds')")
-if [[ $DISCORD == "yes" ]]; then
-    Send-Discord-Notifications
+if [[ $NOTIFICATION == "yes" ]]; then
+    Send-Notifications
 fi
 if [[ $ZABBIX == "yes" ]]; then
     Send-To-Zabbix
