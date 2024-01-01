@@ -9,16 +9,15 @@
 ###############################################################################################
 #####                                   GET CONFIG FILE                                   #####
 ###############################################################################################
-FILE_CONF="/apps/Backup-Script/backup-script.conf" # Config file
+FILE_CONF="/_data/backup-script/backup-script.conf" # Config file
 if [[ -r $FILE_CONF ]]; then
     . $FILE_CONF
-    /bin/mkdir -p $WORKFOLDER
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Config file charged !"
 else
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't charge config file !"
     # Comment this line if you don't use Zabbix
-    zabbix_sender -z "<ZABBIX_SERVER>" -s "<HOST_ZABBIX>" -k "backup.status" -o "1"
-    
+    #zabbix_sender -z "10.20.10.202" -s $hostname -k "backup.status" -o "1"
+
     exit
 fi
 
@@ -69,10 +68,6 @@ BACKUP_ERROS=0
 function Install-Requirements {
     apt install -y mariadb-client pv curl zabbix-sender jq bc
     curl https://rclone.org/install.sh | sudo bash
-    if [[ $NOTIFICATION == "yes" ]]; then
-      apt install -y python3-pip
-      pip3 install apprise
-    fi
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅  All requirements is installed."
     echo ""
     printf '=%.0s' {1..100}
@@ -90,7 +85,7 @@ function Create-Rclone-Config-kDrive {
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   kDrive config already exist."
     else
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Create kDrive config for rclone."
-        $DRY rclone config create kDrive webdav url "https://connect.drive.infomaniak.com/$kd_folder" vendor other user "$kd_user" $DRY2    
+        $DRY rclone config create kDrive webdav url "https://connect.drive.infomaniak.com/$kd_folder" vendor other user "$kd_user" $DRY2
         $DRY rclone config  password kDrive pass "$kd_pass" $DRY2
         if [[ $DRY_RUN == "yes" ]]; then
             $DRY Create Rclone config for kDrive $DRY2
@@ -100,7 +95,7 @@ function Create-Rclone-Config-kDrive {
                 echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   kDrive config created for rclone."
             else
                 echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : kDrive config didn't created, please check that !"
-                
+
                 if [[ $ZABBIX == "yes" ]]; then
                     Send-Zabbix-Data "backup.status" "1"
                 fi
@@ -207,11 +202,11 @@ function Backup-Folders {
                 FOLDER_SIZE_AFTER=$(du -bs $SERVER_NAME/$BACKUPFOLDER/$FOLDER_NAME-$DATE.tar.gz | awk '{print $1}')
                 echo "                                            🔹 [ $FOLDER_NAME ] - $FOLDER : $FOLDER_SIZE_H ($FOLDER_SIZE_AFTER_H)" >> folders.txt
                 if [[ $ZABBIX == "yes" ]]; then
-                    echo "\"$ZABBIX_HOST"\" backup.folder.size[$FOLDER_NAME] $FOLDER_SIZE_AFTER >> $ZABBIX_DATA    
+                    echo "\"$ZABBIX_HOST"\" backup.folder.size[$FOLDER_NAME] $FOLDER_SIZE_AFTER >> $ZABBIX_DATA
                 fi
-                
+
             fi
-        
+
         FOLDER_LIST=$(echo "$FOLDER_LIST $FOLDER")
     done
     echo ""
@@ -227,6 +222,7 @@ function Backup-Folders {
 function Backup-Database {
     DB_BACKUP_ERRORS=0
     DB_COUNT=0
+    DB_LIST=""
     echo ""
     cd $WORKFOLDER
     $DRY /bin/mkdir -p $SERVER_NAME/$BACKUPFOLDER/databases $DRY2
@@ -235,12 +231,16 @@ function Backup-Database {
     for CONTAINER_NAME in $CONTAINER_DB; do
         echo ""
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Backup database of $CONTAINER_NAME started."
-        DB_VERSION=$(docker ps | grep -w $CONTAINER_NAME | awk '{print $2}')
+        DB_VERSION=$(docker ps | grep -P "(^|\s)${CONTAINER_NAME}$" | awk '{print $2}')
+        if [[ ${#DB_VERSION} -eq 12 ]]; then
+            DB_VERSION=$(docker image ls | grep $DB_VERSION | awk '{print $1}')
+        fi
 
         if [[ $DB_VERSION == *"mariadb"* ]] || [[ $DB_VERSION == *"mysql"* ]]; then
             DB_USER=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_USER"')
             DB_PASSWORD=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_PASSWORD"')
             DB_DATABASE=$(docker exec $CONTAINER_NAME bash -c 'echo "$MYSQL_DATABASE"')
+            #echo "$DB_USER $DB_PASSWORD $DB_DATABASE"
             SQLFILE="$SERVER_NAME/$BACKUPFOLDER/databases/$CONTAINER_NAME-mysql-$DATE.sql"
             if [[ $DRY_RUN == "yes" ]]; then
                 $DRY Execute dump of database in $CONTAINER_NAME $DRY2
@@ -271,10 +271,10 @@ function Backup-Database {
                 DB_SIZE_AFTER=$(du -bs $SQLFILE | awk '{print $1}')
                 echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-mysql-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
                 if [[ $ZABBIX == "yes" ]]; then
-                    echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA    
+                    echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA
                 fi
             fi
-            
+
         elif [[ $DB_VERSION == *"postgres"* ]]; then
             DB_USER=$(docker exec $CONTAINER_NAME bash -c 'echo "$POSTGRES_USER"')
             DB_PASSWORD=$(docker exec $CONTAINER_NAME bash -c 'echo "$POSTGRES_PASSWORD"')
@@ -310,9 +310,9 @@ function Backup-Database {
                 DB_SIZE_AFTER=$(du -bs $SQLFILE | awk '{print $1}')
                 echo "                                            🔹 [ $CONTAINER_NAME ] - $CONTAINER_NAME-postgres-$DATE.sql : $DB_SIZE_AFTER_H" >> databases.txt
                 if [[ $ZABBIX == "yes" ]]; then
-                    echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA    
+                    echo "\"$ZABBIX_HOST"\" backup.db.size[$CONTAINER_NAME] $DB_SIZE_AFTER >> $ZABBIX_DATA
                 fi
-            fi
+        fi
         else
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ❌   ERROR : Can't get credentials of $CONTAINER_NAME."
             ((DB_BACKUP_ERRORS++))
@@ -325,11 +325,14 @@ function Backup-Database {
             ((DB_BACKUP_ERRORS++))
             ((BACKUP_ERROS++))
         fi
-            
+
         DB_LIST=$(echo "$DB_LIST $CONTAINER_NAME")
 
 
     done
+    if [ $DB_COUNT -eq 0 ]; then
+        DB_LIST="No database"
+    fi
     echo ""
     printf '=%.0s' {1..100}
     echo ""
@@ -356,9 +359,9 @@ function Run-informations {
     FREE_SPACE_AFTER_H=$(df -h $WORKFOLDER | awk 'FNR==2{print $4}')
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   FREE SPACE BEFORE : $FREE_SPACE_H"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP FOLDERS SIZE : ~ $FOLDER_TOTAL_SIZE_H"
-    echo "$(<folders.txt)" 
+    echo "$(<folders.txt)"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP DATABASE SIZE : ~ $DB_TOTAL_SIZE_H"
-    echo "$(<databases.txt)" 
+    echo "$(<databases.txt)"
     echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🔷   BACKUP TOTAL SIZE COMPRESSED : ~ $FOLDER_TOTAL_SIZE_COMPRESSED_H"
     rm folders.txt databases.txt
     echo ""
@@ -417,7 +420,7 @@ function Send-to-config-rclone {
     for CONFIG in $RCLONE_CONFIGS; do
         echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   🌀   Send to $CONFIG started."
         ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS $CONFIG")
-        rclone -P copy $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER $CONFIG:$SERVER_NAME/$BACKUPFOLDER
+        rclone -P copy --header-upload "X-Delete-After: 604800" $WORKFOLDER/$SERVER_NAME/$BACKUPFOLDER $CONFIG:$SERVER_NAME/$BACKUPFOLDER
         status=$?
         if test $status -eq 0; then
             BACKUP_STATUS=$(echo "$BACKUP_STATUS 🟢 $CONFIG")
@@ -460,7 +463,7 @@ function List-Backup {
         done
     fi
 
-    
+
 }
 
 ###############################################################################################
@@ -491,47 +494,40 @@ function Send-To-Zabbix {
             if test $DESTINATIONS_COUNT -eq $DESTINATIONS_COUNT_VAR; then
                 ZABBIX_DESTINATIONS=$(echo "$ZABBIX_DESTINATIONS]}")
             fi
-            
+
             if [[ $DESTINATION == "SwissBackup" ]]; then
                 ZB_TOTAL=$(echo "$SB_QUOTA * 1000000000" | bc)
+            elif [[ $DESTINATION == "kDrive" ]]; then
+                ZB_TOTAL=$(rclone about $DESTINATION: --full | grep Total | awk '{print $2}')
             else
-                ZB_TOTAL_TEMP=$(rclone about $DESTINATION: | grep Total | awk '{print $2}')
-                if [[ ${ZB_TOTAL_TEMP: -1} == "T" ]]; then
-                    ZB_TOTAL=$(echo "${ZB_TOTAL_TEMP::-1} * 1000000000000" | bc)
-                    elif [[ ${ZB_TOTAL_TEMP: -1} == "G" ]]; then
-                        ZB_TOTAL=$(echo "${ZB_TOTAL_TEMP::-1} * 1000000000" | bc)
-                    elif [[ ${ZB_TOTAL_TEMP: -1} == "M" ]]; then
-                        ZB_TOTAL=$(echo "${ZB_TOTAL_TEMP::-1} * 1000000" | bc)
-                    elif [[ ${ZB_TOTAL_TEMP: -1} == "K" ]]; then
-                        ZB_TOTAL=$(echo "${ZB_TOTAL_TEMP::-1} * 1000" | bc)
-                    else
-                        ZB_TOTAL=$ZB_TOTAL_TEMP
-                fi
+            	 ZB_TOTAL=$(echo "$RCLONE_CONFIG_QUOTA * 1000000000" | bc)
             fi
-            ZB_USED_TEMP=$(rclone about $DESTINATION: | grep Used | awk '{print $2}')
-            if [[ ${ZB_USED_TEMP: -1} == "T" ]]; then
-                ZB_USED=$(echo "${ZB_USED_TEMP::-1} * 1000000000000" | bc)
-                elif [[ ${ZB_USED_TEMP: -1} == "G" ]]; then
-                    ZB_USED=$(echo "${ZB_USED_TEMP::-1} * 1000000000" | bc)
-                elif [[ ${ZB_USED_TEMP: -1} == "M" ]]; then
-                    ZB_USED=$(echo "${ZB_USED_TEMP::-1} * 1000000" | bc)
-                elif [[ ${ZB_USED_TEMP: -1} == "K" ]]; then
-                    ZB_USED=$(echo "${ZB_USED_TEMP::-1} * 1000" | bc)
-                else
-                    ZB_USED=$ZB_USED_TEMP
-            fi
-            ZB_POURCENT_USED=$(echo "$ZB_USED * 100 / $ZB_TOTAL" | bc)
-            ZB_FREE=$(echo "$ZB_TOTAL - $ZB_USED" | bc)
+            ZB_USED=$(rclone about $DESTINATION: --full | grep Used | awk '{print $2}')
+            #echo "$DESTINATION - $ZB_USED"
 
             if [[ $ZB_BACKUP_STATUS == *"$DESTINATION"* ]]; then
                 echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] 0 >> $ZABBIX_DATA
             else
                 echo "\"$ZABBIX_HOST"\" backup.status[$DESTINATION] 1 >> $ZABBIX_DATA
             fi
-            if [ -n "$ZB_TOTAL" ]; then
+
+            if [[ -n $ZB_TOTAL ]]; then
+                #ZB_TOTAL=$(echo "$ZB_TOTAL" | awk -F'.' '{printf $1}')
                 echo "\"$ZABBIX_HOST"\" backup.total[$DESTINATION] $ZB_TOTAL >> $ZABBIX_DATA
-                echo "\"$ZABBIX_HOST"\" backup.free[$DESTINATION] $ZB_FREE >> $ZABBIX_DATA
+            fi
+            if [[ -n $ZB_USED ]]; then
+                #echo "$DESTINATION - $ZB_USED"
+                #ZB_USED=$(echo "$ZB_USED" | awk -F'.' '{printf $1}')
                 echo "\"$ZABBIX_HOST"\" backup.used[$DESTINATION] $ZB_USED >> $ZABBIX_DATA
+            fi
+            ZB_POURCENT_USED=$(echo "$ZB_USED * 100 / $ZB_TOTAL" | bc)
+            ZB_FREE=$(echo "$ZB_TOTAL - $ZB_USED" | bc)
+            if [[ -n $ZB_FREE ]]; then
+                #ZB_FREE=$(echo "$ZB_FREE" | awk -F'.' '{printf $1}')
+                echo "\"$ZABBIX_HOST"\" backup.free[$DESTINATION] $ZB_FREE >> $ZABBIX_DATA
+            fi
+            if [[ -n $ZB_POURCENT_USED ]]; then
+                #ZB_POURCENT_USED=$(echo "$ZB_POURCENT_USED" | awk '{printf "%.0f", $1}')
                 echo "\"$ZABBIX_HOST"\" backup.used.pourcent[$DESTINATION] $ZB_POURCENT_USED >> $ZABBIX_DATA
             fi
         done
@@ -548,17 +544,16 @@ function Send-To-Zabbix {
         if [[ $DOCKER == "yes" ]]; then
             echo "\"$ZABBIX_HOST"\" backup.db.errors $DB_BACKUP_ERRORS >> $ZABBIX_DATA
             echo "\"$ZABBIX_HOST"\" backup.db.count $DB_COUNT >> $ZABBIX_DATA
-            if test $DB_COUNT -gt 0; then
-                echo "\"$ZABBIX_HOST"\" backup.db.list $DB_LIST >> $ZABBIX_DATA
-            fi
+            echo "\"$ZABBIX_HOST"\" backup.db.list $DB_LIST >> $ZABBIX_DATA
         fi
 
-        zabbix_sender -z "$ZABBIX_SRV" -s "$ZABBIX_HOST" -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
+        zabbix_sender -vv -z "$ZABBIX_SRV" -s "$ZABBIX_HOST" -k "backup.folder.size.discovery" -o "$ZABBIX_FOLDER_INV"
         if [[ $DOCKER == "yes" ]]; then
-            zabbix_sender -z "$ZABBIX_SRV" -s "$ZABBIX_HOST" -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
+            zabbix_sender -vv -z "$ZABBIX_SRV" -s "$ZABBIX_HOST" -k "backup.db.size.discovery" -o "$ZABBIX_DB_INV"
         fi
-        zabbix_sender -z "$ZABBIX_SRV" -s "$ZABBIX_HOST" -k "backup.destinations.discovery" -o "$ZABBIX_DESTINATIONS"
-        zabbix_sender -z "$ZABBIX_SRV" -i $ZABBIX_DATA
+        echo $ZABBIX_DATA
+        zabbix_sender -vv -z "$ZABBIX_SRV" -s "$ZABBIX_HOST" -k "backup.destinations.discovery" -o "$ZABBIX_DESTINATIONS"
+        zabbix_sender -vv -z "$ZABBIX_SRV" -i $ZABBIX_DATA
         status=$?
         if test $status -eq 0; then
             echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Data sended to Zabbix."
@@ -607,24 +602,9 @@ function Send-Zabbix-Data {
 ###############################################################################################
 #####                              SEND DISCORD NOTIFICATION                              #####
 ###############################################################################################
-function Send-Notifications {
-    echo " 
-    Folders and databases have been successfully backed up !
-
-    ## Folders ($FOLDER_TOTAL_SIZE_H) :
-    $FOLDER_LIST
-
-    ## Databases ($DB_TOTAL_SIZE_H) :
-    $DB_LIST
-
-    ## Time :
-    $RUN_TIME_H
-
-    ## Backup destinations :
-    ### $BACKUP_STATUS
-    " | apprise -vv -n success -t "[$SERVER_NAME] - Backup of $DATE" --input-format=markdown "$NOTIFIER"
-
-    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Notification are sended"
+function Send-Discord-Notifications {
+    ./discord.sh --webhook-url=$DISCORD_WEBHOOK --username "[$SERVER_NAME]" --text "Backup of $DATE" --title "Folders and databases have been successfully backed up !" --description "**Folders ($FOLDER_TOTAL_SIZE_H) :\n** $FOLDER_LIST\n\n**Databases ($DB_TOTAL_SIZE_H) :\n** $DB_LIST\n\n**Time :**\n $RUN_TIME_H" --color 0x4BF646 --footer "$BACKUP_STATUS" --footer-icon "https://send.papamica.fr/f.php?h=0QpaiREO&p=1"
+    echo "[$(date +%Y-%m-%d_%H:%M:%S)]   BackupScript   ✅   Notification are sended to Discord"
     echo ""
     printf '=%.0s' {1..100}
     echo ""
@@ -676,8 +656,8 @@ fi
 END_TIME=$(date +%s)
 RUN_TIME=$((END_TIME-START_TIME))
 RUN_TIME_H=$(eval "echo $(date -ud "@$RUN_TIME" +'$((%s/3600/24)) days %H hours %M minutes %S seconds')")
-if [[ $NOTIFICATION == "yes" ]]; then
-    Send-Notifications
+if [[ $DISCORD == "yes" ]]; then
+    Send-Discord-Notifications
 fi
 if [[ $ZABBIX == "yes" ]]; then
     Send-To-Zabbix
